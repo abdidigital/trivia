@@ -10,13 +10,20 @@
     }
   ],
   "routes": [
+    // Rute untuk API soal (tambahkan ini)
+    {
+      "src": "/api/questions",
+      "dest": "api/webhook.py"
+    },
+    // Rute untuk webhook (tetap ada)
     {
       "src": "/api/webhook",
       "dest": "api/webhook.py"
     },
+    // Rute untuk frontend (tetap ada)
     {
       "src": "/(.*)",
       "dest": "/public/$1"
     }
   ]
-}
+    }
