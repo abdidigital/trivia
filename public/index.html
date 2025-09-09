@@ -6,12 +6,143 @@
     <title>Kuis Berhadiah</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-button-color: #3390ec;
+            --tg-theme-button-text-color: #ffffff;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            text-align: center;
+        }
+        #quiz-container {
+            max-width: 400px;
+            margin: auto;
+        }
+        #question {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid var(--tg-theme-button-color);
+            border-radius: 8px;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .option-btn:hover {
+            opacity: 0.8;
+        }
+        #feedback {
+            margin-top: 20px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>Selamat Datang di Kuis Berhadiah!</h1>
-    <p>Halaman Mini App berhasil dimuat!</p>
-    <p>Sekarang kamu bisa mulai membangun tampilan kuis di sini dengan HTML, CSS, dan JavaScript.</p>
+
+    <div id="quiz-container">
+        <h2 id="question">Memuat pertanyaan...</h2>
+        <div id="options-container">
+            </div>
+        <p id="feedback"></p>
+    </div>
+
+    <script>
+        // --- BANK SOAL (HARDCODE) ---
+        const bankSoal = [
+            {
+                pertanyaan: "Apa ibukota Indonesia?",
+                opsi: ["Bandung", "Surabaya", "Jakarta", "Medan"],
+                jawabanBenar: "Jakarta"
+            },
+            {
+                pertanyaan: "Siapakah presiden pertama Indonesia?",
+                opsi: ["Soeharto", "Soekarno", "B.J. Habibie", "Joko Widodo"],
+                jawabanBenar: "Soekarno"
+            },
+            {
+                pertanyaan: "Berapakah hasil dari 5 x 5?",
+                opsi: ["10", "20", "25", "30"],
+                jawabanBenar: "25"
+            }
+        ];
+
+        let soalSekarangIndex = 0;
+        let skor = 0;
+
+        // --- REFERENSI ELEMEN HTML ---
+        const questionEl = document.getElementById('question');
+        const optionsContainerEl = document.getElementById('options-container');
+        const feedbackEl = document.getElementById('feedback');
+
+        // --- FUNGSI UTAMA ---
+        function muatSoal() {
+            // Hapus pilihan sebelumnya
+            optionsContainerEl.innerHTML = '';
+            feedbackEl.innerText = '';
+
+            if (soalSekarangIndex >= bankSoal.length) {
+                // Kuis selesai
+                questionEl.innerText = `Kuis Selesai!`;
+                optionsContainerEl.innerHTML = `<p>Skor akhir kamu: ${skor} dari ${bankSoal.length}</p>`;
+                // Di sini kamu bisa mengirim skor ke bot atau menutup Mini App
+                // Telegram.WebApp.sendData(`Skor akhir: ${skor}`);
+                return;
+            }
+
+            const soal = bankSoal[soalSekarangIndex];
+            questionEl.innerText = soal.pertanyaan;
+
+            soal.opsi.forEach(opsi => {
+                const button = document.createElement('button');
+                button.innerText = opsi;
+                button.classList.add('option-btn');
+                button.addEventListener('click', () => pilihJawaban(opsi));
+                optionsContainerEl.appendChild(button);
+            });
+        }
+
+        function pilihJawaban(jawabanDipilih) {
+            const soal = bankSoal[soalSekarangIndex];
+            if (jawabanDipilih === soal.jawabanBenar) {
+                feedbackEl.innerText = "Benar! 🎉";
+                feedbackEl.style.color = 'green';
+                skor++;
+            } else {
+                feedbackEl.innerText = `Salah. Jawaban yang benar adalah ${soal.jawabanBenar}.`;
+                feedbackEl.style.color = 'red';
+            }
+
+            // Lanjut ke soal berikutnya setelah 2 detik
+            soalSekarangIndex++;
+            setTimeout(muatSoal, 2000);
+        }
+        
+        // --- INISIALISASI ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inisialisasi Telegram Web App
+            Telegram.WebApp.ready();
+            // Atur warna tema sesuai tema Telegram pengguna
+            document.documentElement.style.setProperty('--tg-theme-bg-color', Telegram.WebApp.themeParams.bg_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-text-color', Telegram.WebApp.themeParams.text_color || '#000000');
+            document.documentElement.style.setProperty('--tg-theme-button-color', Telegram.WebApp.themeParams.button_color || '#3390ec');
+            document.documentElement.style.setProperty('--tg-theme-button-text-color', Telegram.WebApp.themeParams.button_text_color || '#ffffff');
+            
+            // Mulai kuis
+            muatSoal();
+        });
+
+    </script>
 </body>
 </html>
