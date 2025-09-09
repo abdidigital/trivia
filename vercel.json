@@ -10,17 +10,10 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/questions",
-      "dest": "api/webhook.py"
-    },
-    {
-      "src": "/api/webhook",
-      "dest": "api/webhook.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
-    }
+    { "src": "/api/questions", "dest": "api/webhook.py" },
+    { "src": "/api/submit_score", "dest": "api/webhook.py" },
+    { "src": "/api/leaderboard", "dest": "api/webhook.py" },
+    { "src": "/api/webhook", "dest": "api/webhook.py" },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
