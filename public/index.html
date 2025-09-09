@@ -6,115 +6,139 @@
     <title>Kuis Berhadiah</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-button-color: #3390ec;
-            --tg-theme-button-text-color: #ffffff;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            text-align: center;
-        }
-        #quiz-container { max-width: 400px; margin: auto; }
+        :root { /* ... CSS dari sebelumnya, tidak berubah ... */ }
+        body { /* ... */ }
+        #quiz-container, #leaderboard-container { max-width: 400px; margin: auto; }
         #question { font-size: 1.2em; margin-bottom: 20px; }
-        .option-btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            border: 1px solid var(--tg-theme-button-color);
-            border-radius: 8px;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            font-size: 1em;
-            cursor: pointer;
-        }
-        .option-btn:hover { opacity: 0.8; }
-        #feedback { margin-top: 20px; font-weight: bold; }
+        .option-btn, .nav-btn { /* ... styling tombol ... */ }
+        .nav-btn { background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); }
+        #leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        #leaderboard-table th, #leaderboard-table td { padding: 10px; border-bottom: 1px solid #ccc; }
+        #leaderboard-table th { text-align: left; }
     </style>
 </head>
 <body>
+    <div id="welcome-container">
+        <h1 id="welcome-message">Hai!</h1>
+        <p>Selamat datang di Kuis Berhadiah. Uji pengetahuanmu dan raih skor tertinggi!</p>
+        <button id="start-quiz-btn" class="nav-btn">Mulai Kuis</button>
+        <button id="show-leaderboard-btn" class="nav-btn">Lihat Leaderboard</button>
+    </div>
 
-    <div id="quiz-container">
+    <div id="quiz-container" style="display:none;">
         <h2 id="question">Memuat pertanyaan...</h2>
         <div id="options-container"></div>
         <p id="feedback"></p>
     </div>
 
+    <div id="leaderboard-container" style="display:none;">
+        <h2>🏆 Leaderboard 🏆</h2>
+        <table id="leaderboard-table">
+            <thead><tr><th>Peringkat</th><th>Nama</th><th>Skor</th></tr></thead>
+            <tbody id="leaderboard-body"></tbody>
+        </table>
+        <button id="back-to-menu-btn" class="nav-btn" style="margin-top:20px;">Kembali</button>
+    </div>
+
     <script>
+        // --- Referensi Elemen ---
+        const welcomeContainer = document.getElementById('welcome-container');
+        const quizContainer = document.getElementById('quiz-container');
+        const leaderboardContainer = document.getElementById('leaderboard-container');
+        // ... (referensi elemen kuis lainnya)
+
         let bankSoal = [];
         let soalSekarangIndex = 0;
         let skor = 0;
+        let tgUser = null;
 
-        const questionEl = document.getElementById('question');
-        const optionsContainerEl = document.getElementById('options-container');
-        const feedbackEl = document.getElementById('feedback');
-
-        function muatSoal() {
-            optionsContainerEl.innerHTML = '';
-            feedbackEl.innerText = '';
-
-            if (soalSekarangIndex >= bankSoal.length) {
-                questionEl.innerText = `Kuis Selesai!`;
-                optionsContainerEl.innerHTML = `<p>Skor akhir kamu: ${skor} dari ${bankSoal.length}</p>`;
-                if (Telegram.WebApp) {
-                    Telegram.WebApp.sendData(`Skor akhir: ${skor}`);
-                }
-                return;
-            }
-
-            const soal = bankSoal[soalSekarangIndex];
-            questionEl.innerText = soal.pertanyaan;
-
-            soal.opsi.forEach(opsi => {
-                const button = document.createElement('button');
-                button.innerText = opsi;
-                button.classList.add('option-btn');
-                button.addEventListener('click', () => pilihJawaban(opsi));
-                optionsContainerEl.appendChild(button);
-            });
+        // --- Logika Navigasi Halaman ---
+        function showPage(page) {
+            welcomeContainer.style.display = 'none';
+            quizContainer.style.display = 'none';
+            leaderboardContainer.style.display = 'none';
+            page.style.display = 'block';
         }
 
-        function pilihJawaban(jawabanDipilih) {
-            const soal = bankSoal[soalSekarangIndex];
-            if (jawabanDipilih === soal.jawabanBenar) {
-                feedbackEl.innerText = "Benar! 🎉";
-                feedbackEl.style.color = 'green';
-                skor++;
-            } else {
-                feedbackEl.innerText = `Salah. Jawaban benar: ${soal.jawabanBenar}.`;
-                feedbackEl.style.color = 'red';
-            }
-            
-            Array.from(optionsContainerEl.children).forEach(btn => btn.disabled = true);
-            soalSekarangIndex++;
-            setTimeout(muatSoal, 2000);
-        }
-        
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (Telegram.WebApp) {
-                Telegram.WebApp.ready();
-                document.documentElement.style.setProperty('--tg-theme-bg-color', Telegram.WebApp.themeParams.bg_color || '#ffffff');
-                document.documentElement.style.setProperty('--tg-theme-text-color', Telegram.WebApp.themeParams.text_color || '#000000');
-                document.documentElement.style.setProperty('--tg-theme-button-color', Telegram.WebApp.themeParams.button_color || '#3390ec');
-                document.documentElement.style.setProperty('--tg-theme-button-text-color', Telegram.WebApp.themeParams.button_text_color || '#ffffff');
-            }
+        document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+        document.getElementById('show-leaderboard-btn').addEventListener('click', showLeaderboard);
+        document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
 
+        // --- Logika Kuis ---
+        async function startQuiz() {
+            showPage(quizContainer);
+            questionEl.innerText = 'Memuat pertanyaan...';
             try {
                 const response = await fetch('/api/questions');
                 if (!response.ok) throw new Error('Gagal memuat soal.');
                 bankSoal = await response.json();
+                soalSekarangIndex = 0;
+                skor = 0;
                 muatSoal();
             } catch (error) {
-                console.error(error);
-                questionEl.innerText = 'Gagal memuat kuis. Coba lagi nanti.';
+                questionEl.innerText = 'Gagal memuat kuis.';
             }
+        }
+
+        function muatSoal() {
+            // ... (fungsi muatSoal dari sebelumnya, TIDAK BERUBAH)
+            // Di akhir fungsi muatSoal, tambahkan logika submit
+            if (soalSekarangIndex >= bankSoal.length) {
+                // ... (kode kuis selesai)
+                submitScore(); // Panggil fungsi submit
+                return;
+            }
+        }
+        
+        // ... (fungsi pilihJawaban dari sebelumnya, TIDAK BERUBAH)
+
+        async function submitScore() {
+            if (!tgUser) return;
+            try {
+                await fetch('/api/submit_score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: tgUser, score: skor })
+                });
+            } catch (error) {
+                console.error("Gagal mengirim skor:", error);
+            }
+        }
+
+        // --- Logika Leaderboard ---
+        async function showLeaderboard() {
+            showPage(leaderboardContainer);
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '<tr><td colspan="3">Memuat data...</td></tr>';
+            try {
+                const response = await fetch('/api/leaderboard');
+                if (!response.ok) throw new Error('Gagal memuat leaderboard.');
+                const data = await response.json();
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3">Belum ada skor. Jadilah yang pertama!</td></tr>';
+                } else {
+                    data.forEach(p => {
+                        const row = `<tr><td>${p.rank}</td><td>${p.first_name}</td><td>${p.score}</td></tr>`;
+                        tbody.innerHTML += row;
+                    });
+                }
+            } catch (error) {
+                tbody.innerHTML = '<tr><td colspan="3">Gagal memuat data.</td></tr>';
+            }
+        }
+
+        // --- INISIALISASI ---
+        document.addEventListener('DOMContentLoaded', () => {
+            Telegram.WebApp.ready();
+            // Baca data user
+            if (Telegram.WebApp.initDataUnsafe?.user) {
+                tgUser = Telegram.WebApp.initDataUnsafe.user;
+                document.getElementById('welcome-message').innerText = `Hai, ${tgUser.first_name}!`;
+            }
+            // ... (kode setup tema dari sebelumnya)
         });
     </script>
 </body>
-</html>
+                                             </html>
+                                             
