@@ -1,4 +1,4 @@
-// Data pertanyaan trivia
+// api/questions.js
 const questions = {
   sejarah: [
     {
@@ -29,10 +29,21 @@ const questions = {
 };
 
 module.exports = (req, res) => {
-  const category = req.query.category;
-  if (questions[category]) {
-    res.status(200).json(questions[category]);
-  } else {
-    res.status(404).send('Kategori tidak ditemukan.');
-  }
+    // Tambahkan header CORS untuk mengizinkan permintaan dari mana saja
+    res.setHeader('Access-Control-Allow-Origin', '*'); 
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Tangani permintaan OPTIONS preflight (diperlukan oleh CORS)
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
+    const category = req.query.category;
+    if (questions[category]) {
+        res.status(200).json(questions[category]);
+    } else {
+        res.status(404).send('Kategori tidak ditemukan.');
+    }
 };
