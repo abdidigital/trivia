@@ -1,3 +1,4 @@
+// public/script.js
 let currentQuestions = [];
 let currentQuestionIndex = 0;
 let score = 0;
@@ -7,7 +8,6 @@ async function startGame(category) {
   document.getElementById('category-selection').style.display = 'none';
   document.getElementById('quiz-container').style.display = 'block';
 
-  // Tambahkan try-catch untuk menangani error saat mengambil data
   try {
     const response = await fetch(`/api/questions?category=${category}`);
     if (!response.ok) {
@@ -18,9 +18,13 @@ async function startGame(category) {
     score = 0;
     document.getElementById('score').innerText = score;
 
-    // Panggil showQuestion() hanya setelah data berhasil diunduh
-    showQuestion();
-
+    // Periksa jika tidak ada pertanyaan yang dimuat
+    if (currentQuestions.length > 0) {
+      showQuestion();
+    } else {
+      alert("Tidak ada pertanyaan untuk kategori ini.");
+      restartGame();
+    }
   } catch (error) {
     console.error("Gagal memuat pertanyaan:", error);
     alert("Gagal memuat kuis. Coba lagi nanti.");
@@ -35,19 +39,12 @@ function showQuestion() {
     const answersDiv = document.getElementById('answers');
     answersDiv.innerHTML = '';
     
-    // Periksa apakah jawaban adalah array sebelum melakukan forEach
-    if (Array.isArray(q.answers)) {
-      q.answers.forEach((answer) => {
-        const button = document.createElement('button');
-        button.innerText = answer;
-        button.onclick = () => checkAnswer(answer, q.correct);
-        answersDiv.appendChild(button);
-      });
-    } else {
-      console.error("Format jawaban tidak valid.");
-      // Tampilkan pesan error atau kembali ke menu
-      restartGame();
-    }
+    q.answers.forEach((answer) => {
+      const button = document.createElement('button');
+      button.innerText = answer;
+      button.onclick = () => checkAnswer(answer, q.correct);
+      answersDiv.appendChild(button);
+    });
   } else {
     showResult();
   }
@@ -73,4 +70,3 @@ function restartGame() {
   document.getElementById('result-container').style.display = 'none';
   document.getElementById('category-selection').style.display = 'block';
 }
-
