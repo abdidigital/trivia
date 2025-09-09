@@ -53,4 +53,4 @@ function showResult() {
 function restartGame() {
   document.getElementById('result-container').style.display = 'none';
   document.getElementById('category-selection').style.display = 'block';
-}
+  }
