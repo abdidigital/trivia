@@ -1,0 +1,27 @@
+[
+  {
+    "pertanyaan": "Apa ibukota Indonesia?",
+    "opsi": ["Bandung", "Surabaya", "Jakarta", "Medan"],
+    "jawabanBenar": "Jakarta"
+  },
+  {
+    "pertanyaan": "Siapakah presiden pertama Indonesia?",
+    "opsi": ["Soeharto", "Soekarno", "B.J. Habibie", "Joko Widodo"],
+    "jawabanBenar": "Soekarno"
+  },
+  {
+    "pertanyaan": "Berapakah hasil dari 5 x 5?",
+    "opsi": ["10", "20", "25", "30"],
+    "jawabanBenar": "25"
+  },
+  {
+    "pertanyaan": "Planet terdekat dari Matahari adalah...",
+    "opsi": ["Venus", "Mars", "Merkurius", "Bumi"],
+    "jawabanBenar": "Merkurius"
+  },
+  {
+    "pertanyaan": "Lagu kebangsaan Indonesia adalah...",
+    "opsi": ["Indonesia Pusaka", "Garuda Pancasila", "Indonesia Raya", "Satu Nusa Satu Bangsa"],
+    "jawabanBenar": "Indonesia Raya"
+  }
+]
