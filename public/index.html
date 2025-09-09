@@ -20,14 +20,8 @@
             color: var(--tg-theme-text-color);
             text-align: center;
         }
-        #quiz-container {
-            max-width: 400px;
-            margin: auto;
-        }
-        #question {
-            font-size: 1.2em;
-            margin-bottom: 20px;
-        }
+        #quiz-container { max-width: 400px; margin: auto; }
+        #question { font-size: 1.2em; margin-bottom: 20px; }
         .option-btn {
             display: block;
             width: 100%;
@@ -40,64 +34,37 @@
             font-size: 1em;
             cursor: pointer;
         }
-        .option-btn:hover {
-            opacity: 0.8;
-        }
-        #feedback {
-            margin-top: 20px;
-            font-weight: bold;
-        }
+        .option-btn:hover { opacity: 0.8; }
+        #feedback { margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="quiz-container">
         <h2 id="question">Memuat pertanyaan...</h2>
-        <div id="options-container">
-            </div>
+        <div id="options-container"></div>
         <p id="feedback"></p>
     </div>
 
     <script>
-        // --- BANK SOAL (HARDCODE) ---
-        const bankSoal = [
-            {
-                pertanyaan: "Apa ibukota Indonesia?",
-                opsi: ["Bandung", "Surabaya", "Jakarta", "Medan"],
-                jawabanBenar: "Jakarta"
-            },
-            {
-                pertanyaan: "Siapakah presiden pertama Indonesia?",
-                opsi: ["Soeharto", "Soekarno", "B.J. Habibie", "Joko Widodo"],
-                jawabanBenar: "Soekarno"
-            },
-            {
-                pertanyaan: "Berapakah hasil dari 5 x 5?",
-                opsi: ["10", "20", "25", "30"],
-                jawabanBenar: "25"
-            }
-        ];
-
+        let bankSoal = [];
         let soalSekarangIndex = 0;
         let skor = 0;
 
-        // --- REFERENSI ELEMEN HTML ---
         const questionEl = document.getElementById('question');
         const optionsContainerEl = document.getElementById('options-container');
         const feedbackEl = document.getElementById('feedback');
 
-        // --- FUNGSI UTAMA ---
         function muatSoal() {
-            // Hapus pilihan sebelumnya
             optionsContainerEl.innerHTML = '';
             feedbackEl.innerText = '';
 
             if (soalSekarangIndex >= bankSoal.length) {
-                // Kuis selesai
                 questionEl.innerText = `Kuis Selesai!`;
                 optionsContainerEl.innerHTML = `<p>Skor akhir kamu: ${skor} dari ${bankSoal.length}</p>`;
-                // Di sini kamu bisa mengirim skor ke bot atau menutup Mini App
-                // Telegram.WebApp.sendData(`Skor akhir: ${skor}`);
+                if (Telegram.WebApp) {
+                    Telegram.WebApp.sendData(`Skor akhir: ${skor}`);
+                }
                 return;
             }
 
@@ -120,29 +87,34 @@
                 feedbackEl.style.color = 'green';
                 skor++;
             } else {
-                feedbackEl.innerText = `Salah. Jawaban yang benar adalah ${soal.jawabanBenar}.`;
+                feedbackEl.innerText = `Salah. Jawaban benar: ${soal.jawabanBenar}.`;
                 feedbackEl.style.color = 'red';
             }
-
-            // Lanjut ke soal berikutnya setelah 2 detik
+            
+            Array.from(optionsContainerEl.children).forEach(btn => btn.disabled = true);
             soalSekarangIndex++;
             setTimeout(muatSoal, 2000);
         }
         
-        // --- INISIALISASI ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inisialisasi Telegram Web App
-            Telegram.WebApp.ready();
-            // Atur warna tema sesuai tema Telegram pengguna
-            document.documentElement.style.setProperty('--tg-theme-bg-color', Telegram.WebApp.themeParams.bg_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-theme-text-color', Telegram.WebApp.themeParams.text_color || '#000000');
-            document.documentElement.style.setProperty('--tg-theme-button-color', Telegram.WebApp.themeParams.button_color || '#3390ec');
-            document.documentElement.style.setProperty('--tg-theme-button-text-color', Telegram.WebApp.themeParams.button_text_color || '#ffffff');
-            
-            // Mulai kuis
-            muatSoal();
-        });
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (Telegram.WebApp) {
+                Telegram.WebApp.ready();
+                document.documentElement.style.setProperty('--tg-theme-bg-color', Telegram.WebApp.themeParams.bg_color || '#ffffff');
+                document.documentElement.style.setProperty('--tg-theme-text-color', Telegram.WebApp.themeParams.text_color || '#000000');
+                document.documentElement.style.setProperty('--tg-theme-button-color', Telegram.WebApp.themeParams.button_color || '#3390ec');
+                document.documentElement.style.setProperty('--tg-theme-button-text-color', Telegram.WebApp.themeParams.button_text_color || '#ffffff');
+            }
 
+            try {
+                const response = await fetch('/api/questions');
+                if (!response.ok) throw new Error('Gagal memuat soal.');
+                bankSoal = await response.json();
+                muatSoal();
+            } catch (error) {
+                console.error(error);
+                questionEl.innerText = 'Gagal memuat kuis. Coba lagi nanti.';
+            }
+        });
     </script>
 </body>
 </html>
