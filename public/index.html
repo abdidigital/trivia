@@ -6,15 +6,21 @@
     <title>Kuis Berhadiah</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { /* ... CSS dari sebelumnya, tidak berubah ... */ }
-        body { /* ... */ }
-        #quiz-container, #leaderboard-container { max-width: 400px; margin: auto; }
-        #question { font-size: 1.2em; margin-bottom: 20px; }
-        .option-btn, .nav-btn { /* ... styling tombol ... */ }
-        .nav-btn { background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); }
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-button-color: #3390ec;
+            --tg-theme-button-text-color: #ffffff;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); text-align: center; }
+        #quiz-container, #leaderboard-container, #welcome-container { max-width: 400px; margin: auto; }
+        #question { font-size: 1.2em; margin-bottom: 20px; min-height: 50px; }
+        .option-btn, .nav-btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: 1px solid var(--tg-theme-button-color); border-radius: 8px; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); font-size: 1em; cursor: pointer; transition: background-color 0.2s; }
+        .nav-btn { background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; }
+        .option-btn:disabled { opacity: 0.7; }
+        #feedback { margin-top: 20px; font-weight: bold; min-height: 24px; }
         #leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         #leaderboard-table th, #leaderboard-table td { padding: 10px; border-bottom: 1px solid #ccc; }
-        #leaderboard-table th { text-align: left; }
     </style>
 </head>
 <body>
@@ -41,22 +47,20 @@
     </div>
 
     <script>
-        // --- Referensi Elemen ---
         const welcomeContainer = document.getElementById('welcome-container');
         const quizContainer = document.getElementById('quiz-container');
         const leaderboardContainer = document.getElementById('leaderboard-container');
-        // ... (referensi elemen kuis lainnya)
+        const questionEl = document.getElementById('question');
+        const optionsContainerEl = document.getElementById('options-container');
+        const feedbackEl = document.getElementById('feedback');
 
         let bankSoal = [];
         let soalSekarangIndex = 0;
         let skor = 0;
         let tgUser = null;
 
-        // --- Logika Navigasi Halaman ---
         function showPage(page) {
-            welcomeContainer.style.display = 'none';
-            quizContainer.style.display = 'none';
-            leaderboardContainer.style.display = 'none';
+            [welcomeContainer, quizContainer, leaderboardContainer].forEach(p => p.style.display = 'none');
             page.style.display = 'block';
         }
 
@@ -64,10 +68,11 @@
         document.getElementById('show-leaderboard-btn').addEventListener('click', showLeaderboard);
         document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
 
-        // --- Logika Kuis ---
         async function startQuiz() {
             showPage(quizContainer);
             questionEl.innerText = 'Memuat pertanyaan...';
+            optionsContainerEl.innerHTML = '';
+            feedbackEl.innerText = '';
             try {
                 const response = await fetch('/api/questions');
                 if (!response.ok) throw new Error('Gagal memuat soal.');
@@ -81,16 +86,39 @@
         }
 
         function muatSoal() {
-            // ... (fungsi muatSoal dari sebelumnya, TIDAK BERUBAH)
-            // Di akhir fungsi muatSoal, tambahkan logika submit
+            optionsContainerEl.innerHTML = '';
+            feedbackEl.innerText = '';
             if (soalSekarangIndex >= bankSoal.length) {
-                // ... (kode kuis selesai)
-                submitScore(); // Panggil fungsi submit
+                questionEl.innerText = `Kuis Selesai!`;
+                optionsContainerEl.innerHTML = `<p>Skor akhir kamu: ${skor} dari ${bankSoal.length}</p><button class="nav-btn" onclick="showPage(welcomeContainer)">Selesai</button>`;
+                submitScore();
                 return;
             }
+            const soal = bankSoal[soalSekarangIndex];
+            questionEl.innerText = soal.pertanyaan;
+            soal.opsi.forEach(opsi => {
+                const button = document.createElement('button');
+                button.innerText = opsi;
+                button.classList.add('option-btn');
+                button.onclick = () => pilihJawaban(opsi);
+                optionsContainerEl.appendChild(button);
+            });
         }
         
-        // ... (fungsi pilihJawaban dari sebelumnya, TIDAK BERUBAH)
+        function pilihJawaban(jawabanDipilih) {
+            Array.from(optionsContainerEl.children).forEach(btn => btn.disabled = true);
+            const soal = bankSoal[soalSekarangIndex];
+            if (jawabanDipilih === soal.jawabanBenar) {
+                feedbackEl.innerText = "Benar! 🎉";
+                feedbackEl.style.color = 'green';
+                skor++;
+            } else {
+                feedbackEl.innerText = `Salah. Jawaban benar: ${soal.jawabanBenar}.`;
+                feedbackEl.style.color = 'red';
+            }
+            soalSekarangIndex++;
+            setTimeout(muatSoal, 2000);
+        }
 
         async function submitScore() {
             if (!tgUser) return;
@@ -100,12 +128,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user: tgUser, score: skor })
                 });
-            } catch (error) {
-                console.error("Gagal mengirim skor:", error);
-            }
+            } catch (error) { console.error("Gagal mengirim skor:", error); }
         }
 
-        // --- Logika Leaderboard ---
         async function showLeaderboard() {
             showPage(leaderboardContainer);
             const tbody = document.getElementById('leaderboard-body');
@@ -116,29 +141,26 @@
                 const data = await response.json();
                 tbody.innerHTML = '';
                 if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3">Belum ada skor. Jadilah yang pertama!</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="3">Belum ada skor.</td></tr>';
                 } else {
                     data.forEach(p => {
-                        const row = `<tr><td>${p.rank}</td><td>${p.first_name}</td><td>${p.score}</td></tr>`;
-                        tbody.innerHTML += row;
+                        tbody.innerHTML += `<tr><td>${p.rank}</td><td>${p.first_name}</td><td>${p.score}</td></tr>`;
                     });
                 }
-            } catch (error) {
-                tbody.innerHTML = '<tr><td colspan="3">Gagal memuat data.</td></tr>';
-            }
+            } catch (error) { tbody.innerHTML = '<tr><td colspan="3">Gagal memuat data.</td></tr>'; }
         }
 
-        // --- INISIALISASI ---
         document.addEventListener('DOMContentLoaded', () => {
             Telegram.WebApp.ready();
-            // Baca data user
             if (Telegram.WebApp.initDataUnsafe?.user) {
                 tgUser = Telegram.WebApp.initDataUnsafe.user;
                 document.getElementById('welcome-message').innerText = `Hai, ${tgUser.first_name}!`;
             }
-            // ... (kode setup tema dari sebelumnya)
+            document.documentElement.style.setProperty('--tg-theme-bg-color', Telegram.WebApp.themeParams.bg_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-text-color', Telegram.WebApp.themeParams.text_color || '#000000');
+            document.documentElement.style.setProperty('--tg-theme-button-color', Telegram.WebApp.themeParams.button_color || '#3390ec');
+            document.documentElement.style.setProperty('--tg-theme-button-text-color', Telegram.WebApp.themeParams.button_text_color || '#ffffff');
         });
     </script>
 </body>
-                                             </html>
-                                             
+</html>
