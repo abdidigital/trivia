@@ -3,22 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuis Berhadiah</title>
+    <title>Kuis Level Up</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-button-color: #3390ec;
-            --tg-theme-button-text-color: #ffffff;
-        }
+        :root { --tg-theme-bg-color: #ffffff; --tg-theme-text-color: #000000; --tg-theme-button-color: #3390ec; --tg-theme-button-text-color: #ffffff; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); text-align: center; }
         #quiz-container, #leaderboard-container, #welcome-container { max-width: 400px; margin: auto; }
         #question { font-size: 1.2em; margin-bottom: 20px; min-height: 50px; }
         .option-btn, .nav-btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: 1px solid var(--tg-theme-button-color); border-radius: 8px; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); font-size: 1em; cursor: pointer; transition: background-color 0.2s; }
         .nav-btn { background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; }
-        .option-btn:disabled { opacity: 0.7; }
-        #feedback { margin-top: 20px; font-weight: bold; min-height: 24px; }
+        #progress-bar-container { width: 100%; background-color: #e0e0e0; border-radius: 8px; overflow: hidden; margin: 10px 0; }
+        #progress-bar { height: 10px; background-color: var(--tg-theme-button-color); width: 0%; transition: width 0.5s ease-in-out; }
         #leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         #leaderboard-table th, #leaderboard-table td { padding: 10px; border-bottom: 1px solid #ccc; }
     </style>
@@ -26,7 +21,10 @@
 <body>
     <div id="welcome-container">
         <h1 id="welcome-message">Hai!</h1>
-        <p>Selamat datang di Kuis Berhadiah. Uji pengetahuanmu dan raih skor tertinggi!</p>
+        <h2 id="level-display">Level 0</h2>
+        <p id="progress-text">Progres: 0/10</p>
+        <div id="progress-bar-container"><div id="progress-bar"></div></div>
+        <p>Jawab pertanyaan dengan benar untuk naik level!</p>
         <button id="start-quiz-btn" class="nav-btn">Mulai Kuis</button>
         <button id="show-leaderboard-btn" class="nav-btn">Lihat Leaderboard</button>
     </div>
@@ -40,7 +38,7 @@
     <div id="leaderboard-container" style="display:none;">
         <h2>🏆 Leaderboard 🏆</h2>
         <table id="leaderboard-table">
-            <thead><tr><th>Peringkat</th><th>Nama</th><th>Skor</th></tr></thead>
+            <thead><tr><th>Peringkat</th><th>Nama</th><th>Level</th></tr></thead>
             <tbody id="leaderboard-body"></tbody>
         </table>
         <button id="back-to-menu-btn" class="nav-btn" style="margin-top:20px;">Kembali</button>
@@ -53,11 +51,12 @@
         const questionEl = document.getElementById('question');
         const optionsContainerEl = document.getElementById('options-container');
         const feedbackEl = document.getElementById('feedback');
-
-        let bankSoal = [];
-        let soalSekarangIndex = 0;
-        let skor = 0;
-        let tgUser = null;
+        const levelDisplay = document.getElementById('level-display');
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        
+        let bankSoal = [], soalSekarangIndex = 0, skor = 0, tgUser = null;
+        let currentUser = { level: 0, xp: 0, xp_needed: 10 };
 
         function showPage(page) {
             [welcomeContainer, quizContainer, leaderboardContainer].forEach(p => p.style.display = 'none');
@@ -68,29 +67,44 @@
         document.getElementById('show-leaderboard-btn').addEventListener('click', showLeaderboard);
         document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
 
+        async function fetchUserProgress() {
+            if (!tgUser) return;
+            try {
+                const response = await fetch(`/api/get_user_progress?user_id=${tgUser.id}`);
+                if (!response.ok) return;
+                const data = await response.json();
+                currentUser.level = data.level;
+                currentUser.xp = data.xp;
+                currentUser.xp_needed = data.xp_needed;
+                updateProgressUI();
+            } catch (error) { console.error("Gagal mengambil progres user:", error); }
+        }
+        
+        function updateProgressUI() {
+            levelDisplay.innerText = `Level ${currentUser.level}`;
+            progressText.innerText = `Progres: ${currentUser.xp}/${currentUser.xp_needed}`;
+            const percentage = currentUser.xp_needed > 0 ? (currentUser.xp / currentUser.xp_needed) * 100 : 0;
+            progressBar.style.width = `${percentage}%`;
+        }
+
         async function startQuiz() {
             showPage(quizContainer);
             questionEl.innerText = 'Membuat soal baru dari AI, mohon tunggu...';
-            optionsContainerEl.innerHTML = '';
-            feedbackEl.innerText = '';
             try {
-                const response = await fetch('/api/questions');
+                const response = await fetch(`/api/questions?level=${currentUser.level}`);
                 if (!response.ok) throw new Error('Gagal memuat soal.');
                 bankSoal = await response.json();
-                soalSekarangIndex = 0;
-                skor = 0;
+                soalSekarangIndex = 0; skor = 0;
                 muatSoal();
-            } catch (error) {
-                questionEl.innerText = 'Gagal memuat kuis. Coba lagi nanti.';
-            }
+            } catch (error) { questionEl.innerText = 'Gagal memuat kuis. Coba lagi nanti.'; }
         }
-
+        
         function muatSoal() {
             optionsContainerEl.innerHTML = '';
             feedbackEl.innerText = '';
             if (soalSekarangIndex >= bankSoal.length) {
                 questionEl.innerText = `Kuis Selesai!`;
-                optionsContainerEl.innerHTML = `<p>Skor akhir kamu: ${skor} dari ${bankSoal.length}</p><button class="nav-btn" onclick="showPage(welcomeContainer)">Selesai</button>`;
+                optionsContainerEl.innerHTML = `<p>Kamu menjawab ${skor} soal dengan benar!</p><button class="nav-btn" onclick="showPage(welcomeContainer)">Selesai</button>`;
                 submitScore();
                 return;
             }
@@ -128,6 +142,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user: tgUser, score: skor })
                 });
+                await fetchUserProgress(); // Ambil progres terbaru setelah submit
             } catch (error) { console.error("Gagal mengirim skor:", error); }
         }
 
@@ -140,23 +155,19 @@
                 if (!response.ok) throw new Error('Gagal memuat leaderboard.');
                 const data = await response.json();
                 tbody.innerHTML = '';
-                if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3">Belum ada skor.</td></tr>';
-                } else {
-                    data.forEach(p => {
-                        tbody.innerHTML += `<tr><td>${p.rank}</td><td>${p.first_name}</td><td>${p.score}</td></tr>`;
-                    });
-                }
+                if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="3">Belum ada skor.</td></tr>'; }
+                else { data.forEach(p => { tbody.innerHTML += `<tr><td>${p.rank}</td><td>${p.first_name}</td><td>${p.level}</td></tr>`; }); }
             } catch (error) { tbody.innerHTML = '<tr><td colspan="3">Gagal memuat data.</td></tr>'; }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            Telegram.WebApp.ready();
-            if (Telegram.WebApp.initDataUnsafe?.user) {
-                tgUser = Telegram.WebApp.initDataUnsafe.user;
-                document.getElementById('welcome-message').innerText = `Hai, ${tgUser.first_name}!`;
-            }
+        document.addEventListener('DOMContentLoaded', async () => {
             const tg = window.Telegram.WebApp;
+            tg.ready();
+            if (tg.initDataUnsafe?.user) {
+                tgUser = tg.initDataUnsafe.user;
+                document.getElementById('welcome-message').innerText = `Hai, ${tgUser.first_name}!`;
+                await fetchUserProgress();
+            }
             document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
             document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
             document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#3390ec');
