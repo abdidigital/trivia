@@ -75,6 +75,7 @@
         let tgUser = null, timerInterval;
         let currentUser = { level: 0, xp: 0, xp_needed: 10 };
         let isInteractionLocked = false;
+        let currentQuestionText = "";
 
         function showPage(page) {
             [welcomeContainer, quizContainer, leaderboardContainer].forEach(p => p.classList.add('hidden'));
@@ -108,7 +109,7 @@
                 if (timeLeft < 10) timerCircle.style.stroke = '#ef4444';
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    pilihJawaban(null, null);
+                    pilihJawaban({ jawabanBenar: null }, null);
                 }
             }, 1000);
         }
@@ -120,19 +121,17 @@
 
         async function muatSoal() {
             isInteractionLocked = true;
-
             questionEl.innerText = 'Membuat soal baru...';
             optionsContainerEl.innerHTML = '';
             feedbackEl.innerText = '';
             try {
-                // ## INILAH PERBAIKANNYA ##
-                // Menambahkan parameter unik (&t=...) untuk mencegah caching
-                const response = await fetch(`/api/get_single_question?level=${currentUser.level}&t=${new Date().getTime()}`);
-                
+                const response = await fetch(`/api/get_single_question?level=${currentUser.level}&user_id=${tgUser.id}&t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error('Gagal memuat soal.');
                 const soal = await response.json();
                 
+                currentQuestionText = soal.pertanyaan;
                 questionEl.innerText = soal.pertanyaan;
+
                 soal.opsi.forEach(opsi => {
                     const button = document.createElement('button');
                     button.innerText = opsi;
@@ -157,22 +156,22 @@
             
             let correct = false;
             if (jawabanDipilih === null) {
-                feedbackEl.innerText = `Waktu habis! Jawaban: ${soal.jawabanBenar}`;
+                feedbackEl.innerText = `Waktu habis!`;
                 feedbackEl.style.color = '#ef4444';
             } else if (jawabanDipilih === soal.jawabanBenar) {
                 feedbackEl.innerText = "Benar! +1 XP 🎉";
                 feedbackEl.style.color = '#22c55e';
                 correct = true;
             } else {
-                feedbackEl.innerText = `Salah. Jawaban benar: ${soal.jawabanBenar}`;
+                feedbackEl.innerText = `Salah! Coba lagi di soal berikutnya.`;
                 feedbackEl.style.color = '#ef4444';
             }
 
-            submitProgress(correct ? 1 : 0);
+            submitProgress(correct ? 1 : 0, currentQuestionText);
             setTimeout(muatSoal, 2000);
         }
         
-        async function submitProgress(xpGained) {
+        async function submitProgress(xpGained, questionText) {
             if (!tgUser) {
                 isInteractionLocked = false;
                 return;
@@ -181,7 +180,11 @@
                 const response = await fetch('/api/submit_score', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user: tgUser, score: xpGained })
+                    body: JSON.stringify({ 
+                        user: tgUser, 
+                        score: xpGained,
+                        question: questionText
+                    })
                 });
                 const data = await response.json();
                 currentUser = { level: data.level, xp: data.xp, xp_needed: data.xp_needed };
