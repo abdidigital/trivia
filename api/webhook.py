@@ -57,51 +57,64 @@ def init_db():
 init_db()
 
 # --- Endpoint API ---
-@app.route("/api/get_single_question", methods=["GET"])
-def get_single_question():
+@app.route("/api/get_question_batch", methods=["GET"])
+def get_question_batch():
     user_id = request.args.get('user_id')
     level = int(request.args.get('level', 0))
     if not user_id: return jsonify({"error": "user_id is required"}), 400
 
-    TOPIK_KUIS = ["Sains dan Alam", "Sejarah Dunia", "Geografi", "Teknologi", "Seni dan Budaya", "Film dan Musik", "Olahraga"]
-    if level <= 2: difficulty = "sangat mudah"
-    elif level <= 5: difficulty = "mudah"
-    elif level <= 10: difficulty = "sedang"
+    TOPIK_KUIS = [
+        "Sains dan Alam", "Sejarah Dunia", "Geografi", "Teknologi dan Komputer",
+        "Seni dan Budaya", "Film dan Sinema", "Musik Modern", "Musik Klasik", "Olahraga Dunia",
+        "Mitologi Yunani", "Mitologi Romawi", "Mitologi Nordik", "Makanan dan Minuman Internasional",
+        "Astronomi dan Luar Angkasa", "Biologi dan Hewan", "Kimia Dasar", "Fisika Sehari-hari",
+        "Kesusastraan Dunia", "Penemuan dan Inovasi", "Anatomi Manusia", "Ibukota Negara",
+        "Mata Uang Dunia", "Keajaiban Dunia", "Sejarah Indonesia", "Pahlawan Nasional",
+        "Permainan Video (Video Games)", "Istilah Internet", "Filsafat Dasar", "Ekonomi Dasar",
+        "Botani dan Tumbuhan", "Samudra dan Lautan", "Arsitektur Terkenal"
+    ]
+    
+    if level <= 5: difficulty = "mudah"
+    elif level <= 15: difficulty = "sedang"
     else: difficulty = "sulit"
     topik_acak = random.choice(TOPIK_KUIS)
 
     prompt_kuis = f"""
-    Buatkan 1 pertanyaan kuis pilihan ganda tentang topik "{topik_acak}".
+    Buatkan 50 pertanyaan kuis pilihan ganda tentang topik "{topik_acak}".
     Level kesulitan: {difficulty}. Bahasa: Indonesia.
-    Format output HARUS berupa objek JSON tunggal yang valid, tanpa teks atau penjelasan tambahan.
-    Objek JSON harus memiliki kunci: "pertanyaan", "opsi" (array 4 string), dan "jawabanBenar".
+    Format output HARUS berupa array JSON yang valid, tanpa teks atau penjelasan tambahan.
+    Setiap objek dalam array harus memiliki kunci: "pertanyaan", "opsi" (array 4 string), dan "jawabanBenar".
     """
-
-    for _ in range(3):
-        try:
-            if not GEMINI_API_KEY: raise ValueError("GEMINI_API_KEY tidak diatur")
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(prompt_kuis)
-            raw_response = response.text.strip().replace("```json", "").replace("```", "").strip()
-            question_data = json.loads(raw_response)
-            question_text = question_data.get("pertanyaan", "")
-            question_hash = hashlib.sha256(question_text.encode()).hexdigest()
-            
-            db.connect(reuse_if_open=True)
-            answered = AnsweredQuestion.select().join(Player).where(
-                (Player.user_id == user_id) & (AnsweredQuestion.question_hash == question_hash)
-            ).exists()
-            db.close()
-
-            if not answered:
-                return jsonify(question_data)
-            logging.warning(f"Soal duplikat untuk user {user_id}. Mencoba lagi...")
-        except Exception as e:
-            logging.error(f"Error saat memanggil/memproses Gemini: {e}")
-            break
-    
-    logging.error(f"Gagal mendapatkan soal unik untuk user {user_id} setelah 3x coba.")
-    return jsonify(question_data) if 'question_data' in locals() else jsonify({"error": "Gagal total membuat soal"}), 500
+    try:
+        if not os.environ.get("GEMINI_API_KEY"): raise ValueError("GEMINI_API_KEY tidak diatur")
+        
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt_kuis)
+        raw_response = response.text.strip().replace("```json", "").replace("```", "").strip()
+        generated_questions = json.loads(raw_response)
+        
+        db.connect(reuse_if_open=True)
+        player = Player.get_or_none(Player.user_id == user_id)
+        
+        answered_hashes = set()
+        if player:
+            query = AnsweredQuestion.select(AnsweredQuestion.question_hash).where(AnsweredQuestion.player == player)
+            answered_hashes = {q.question_hash for q in query}
+        
+        unique_questions = []
+        for q in generated_questions:
+            q_hash = hashlib.sha256(q.get("pertanyaan", "").encode()).hexdigest()
+            if q_hash not in answered_hashes:
+                unique_questions.append(q)
+        
+        logging.info(f"Generated {len(generated_questions)}, returning {len(unique_questions)} unique questions for user {user_id}")
+        return jsonify(unique_questions)
+        
+    except Exception as e:
+        logging.error(f"Error di get_question_batch: {e}")
+        return jsonify({"error": "Gagal membuat set soal"}), 500
+    finally:
+        if not db.is_closed(): db.close()
 
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
@@ -177,4 +190,4 @@ def get_leaderboard():
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     return 'ok', 200
-
+    
