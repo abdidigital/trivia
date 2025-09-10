@@ -9,8 +9,6 @@
 
     <meta name="monetag" content="456e681fa51bd728d62ad7e576374311">
     
-    <script>(function(s){s.dataset.zone='9853421',s.src='https://gizokraijaw.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-    
     <style>
         :root {
             --tg-bg: #ffffff; --tg-text: #000000; --tg-button: #3390ec;
@@ -23,94 +21,83 @@
         .timer-svg { transform: scaleX(-1) rotate(-90deg); }
         .timer-svg-circle { transition: stroke-dashoffset 1s linear; }
         #level-up-toast { transition: opacity 0.5s, transform 0.5s; }
+
+        /* Style untuk Overlay Iklan Interstitial */
+        #interstitial-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            transition: opacity 0.3s;
+        }
+
+        /* ## KODE BARU UNTUK DEBUGGING ## */
+        #interstitial-container > div {
+            border: 3px solid red !important;
+            background-color: #f0f0f0;
+            min-height: 250px; /* Beri tinggi minimal agar terlihat */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-family: sans-serif;
+            text-align: center;
+            padding: 1rem;
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
     <div id="app" class="max-w-md mx-auto p-4 pb-24">
 
         <div id="welcome-container" class="text-center space-y-4">
-            <div id="lives-display-welcome" class="flex justify-center items-center text-2xl space-x-1"></div>
-            <h1 id="welcome-message" class="text-3xl font-bold">Memuat...</h1>
-            <div id="user-stats" class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg hidden">
-                <h2 id="level-display" class="text-2xl font-semibold">Level 0</h2>
-                <p id="progress-text" class="text-sm" style="color: var(--tg-hint);">Progres: 0/10</p>
-                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 mt-2">
-                    <div id="progress-bar" class="progress-bar-fill h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                </div>
             </div>
-            <p id="welcome-info" class="hidden" style="color: var(--tg-hint);">Jawab pertanyaan dengan benar untuk naik level!</p>
-            <div class="space-y-3">
-                <button id="start-quiz-btn" class="btn-primary w-full py-3 rounded-lg font-semibold text-lg" disabled>Mulai Kuis</button>
-                <button id="show-leaderboard-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold text-lg" disabled>Lihat Leaderboard</button>
-            </div>
-        </div>
 
         <div id="quiz-container" class="hidden text-center space-y-4 relative">
-            <div id="lives-display-quiz" class="flex justify-center items-center space-x-1 absolute top-0 right-0 text-xl"></div>
-            <div class="relative w-24 h-24 mx-auto">
-                <svg class="timer-svg" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e0e0e0" stroke-width="10"></circle>
-                    <circle id="timer-circle" class="timer-svg-circle" cx="50" cy="50" r="45" fill="none" stroke="#22c55e" stroke-width="10" stroke-linecap="round" pathLength="100"></circle>
-                </svg>
-                <span id="timer-text" class="absolute inset-0 flex items-center justify-center text-2xl font-bold">30</span>
             </div>
-            <h2 id="question" class="text-xl font-semibold min-h-[80px]">Memuat soal...</h2>
-            <div id="options-container" class="space-y-3"></div>
-            <p id="feedback" class="font-bold min-h-[24px]"></p>
-            <div class="flex space-x-2 pt-4">
-                <button id="home-btn-quiz" class="bg-slate-200 dark:bg-slate-700 w-full py-2 rounded-lg font-semibold">Menu Utama</button>
-                <button id="leaderboard-btn-quiz" class="bg-slate-200 dark:bg-slate-700 w-full py-2 rounded-lg font-semibold">Leaderboard</button>
-            </div>
-        </div>
 
         <div id="game-over-container" class="hidden text-center space-y-4 pt-10">
-            <div class="text-6xl">😭</div>
-            <h2 class="text-3xl font-bold text-red-500">Nyawa Habis!</h2>
-            <p style="color: var(--tg-hint);">Tonton iklan untuk mendapatkan +1 nyawa!</p>
-            <button id="watch-ad-btn" class="btn-primary w-full py-3 rounded-lg font-semibold">Tonton Iklan (+1 Nyawa)</button>
-            <button id="back-to-menu-gameover-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold">Kembali ke Menu</button>
-        </div>
+            </div>
 
         <div id="leaderboard-container" class="hidden space-y-4">
-            <h2 class="text-2xl font-bold text-center">🏆 Leaderboard 🏆</h2>
-            <div id="leaderboard-body" class="space-y-2"></div>
-            <button id="back-to-menu-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold">Kembali</button>
-        </div>
+            </div>
         
         <div id="level-up-toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white py-3 px-6 rounded-full shadow-lg opacity-0 translate-y-10">
             <span id="level-up-text" class="font-bold text-lg"></span>
         </div>
     </div>
+
+    <div id="interstitial-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div id="interstitial-container" class="relative bg-white dark:bg-slate-800 p-4 rounded-lg max-w-sm w-full">
+            <div>Wadah Iklan (Jika kamu melihat ini, berarti wadahnya muncul)</div>
+
+            <button id="close-interstitial-btn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 font-bold text-lg">&times;</button>
+        </div>
+    </div>
     
     <script>
-        const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), gameOverContainer = document.getElementById('game-over-container'), questionEl = document.getElementById('question'), optionsContainerEl = document.getElementById('options-container'), feedbackEl = document.getElementById('feedback'), levelDisplay = document.getElementById('level-display'), progressText = document.getElementById('progress-text'), progressBar = document.getElementById('progress-bar'), timerCircle = document.getElementById('timer-circle'), timerText = document.getElementById('timer-text'), welcomeMessageEl = document.getElementById('welcome-message'), startQuizBtn = document.getElementById('start-quiz-btn'), showLeaderboardBtn = document.getElementById('show-leaderboard-btn'), userStatsEl = document.getElementById('user-stats'), welcomeInfoEl = document.getElementById('welcome-info'), livesWelcomeEl = document.getElementById('lives-display-welcome'), livesQuizEl = document.getElementById('lives-display-quiz'), watchAdBtn = document.getElementById('watch-ad-btn');
+        const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), gameOverContainer = document.getElementById('game-over-container'), interstitialOverlay = document.getElementById('interstitial-overlay'), closeInterstitialBtn = document.getElementById('close-interstitial-btn');
+        // ... (Sisa referensi elemen sama persis seperti sebelumnya)
         
         let tgUser = null, timerInterval, isInteractionLocked = false, bankSoal = [], soalSekarangIndex = 0, skor = 0, currentQuestionText = "", questionAnsweredCount = 0;
         let currentUser = { level: 0, xp: 0, xp_needed: 10, lives: 3 };
 
-        function showPage(page) { [welcomeContainer, quizContainer, leaderboardContainer, gameOverContainer].forEach(p => p.classList.add('hidden')); page.classList.remove('hidden'); }
-        
-        startQuizBtn.addEventListener('click', () => { triggerInterstitialAd(); startQuiz(); });
-        showLeaderboardBtn.addEventListener('click', () => { triggerInterstitialAd(); showLeaderboard(); });
-        watchAdBtn.addEventListener('click', triggerRewardAd);
-        document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
-        document.getElementById('back-to-menu-gameover-btn').addEventListener('click', () => showPage(welcomeContainer));
-        document.getElementById('home-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showPage(welcomeContainer); });
-        document.getElementById('leaderboard-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showLeaderboard(); });
-
+        // --- Fungsi Iklan ---
         function triggerInterstitialAd() {
-            console.log("Interstitial Ad event triggered for Vignette.");
-            // Script Vignette yang terpasang akan mendeteksi klik ini
-            // dan memutuskan secara otomatis apakah akan menampilkan iklan.
+            console.log("Interstitial Ad (Native) Triggered");
+            interstitialOverlay.classList.remove('hidden');
         }
 
+        closeInterstitialBtn.addEventListener('click', () => {
+            interstitialOverlay.classList.add('hidden');
+        });
+
         function triggerRewardAd() {
-            console.log("Reward Ad event triggered for Vignette.");
-            watchAdBtn.disabled = true;
-            watchAdBtn.innerText = 'Memuat iklan...';
+            console.log("Reward Ad (Native) Triggered");
+            triggerInterstitialAd(); 
             
-            // Kita beri jeda agar script Vignette sempat menampilkan iklan
-            setTimeout(async () => {
+            const watchAdBtn = document.getElementById('watch-ad-btn');
+            
+            closeInterstitialBtn.onclick = async () => {
+                interstitialOverlay.classList.add('hidden');
+                watchAdBtn.disabled = true;
+                watchAdBtn.innerText = 'Memproses hadiah...';
                 try {
                     const response = await fetch('/api/add_life', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: tgUser }) });
                     const data = await response.json();
@@ -119,192 +106,16 @@
                         updateLivesUI();
                         showPage(welcomeContainer);
                     } else { throw new Error(data.error); }
-                } catch (error) { alert('Gagal mendapatkan nyawa. Coba lagi.'); }
+                } catch (error) { alert('Gagal mendapatkan nyawa.'); }
                 finally { watchAdBtn.disabled = false; watchAdBtn.innerText = 'Tonton Iklan (+1 Nyawa)'; }
-            }, 2000);
+                closeInterstitialBtn.onclick = () => interstitialOverlay.classList.add('hidden');
+            };
         }
 
-        function updateLivesUI() {
-            const hearts = '❤️'.repeat(currentUser.lives) + '🖤'.repeat(Math.max(0, 3 - currentUser.lives));
-            livesWelcomeEl.innerHTML = hearts;
-            livesQuizEl.innerHTML = hearts;
-        }
-
-        function gameOver() { clearInterval(timerInterval); showPage(gameOverContainer); }
-
-        async function startQuiz() {
-            if (!tgUser) { alert("Data user tidak ditemukan. Harap buka dari menu bot Telegram."); return; }
-            if (currentUser.lives <= 0) { gameOver(); return; }
-            showPage(quizContainer);
-            questionEl.innerText = 'Mempersiapkan set soal...';
-            try {
-                const response = await fetch(`/api/get_question_batch?level=${currentUser.level}&user_id=${tgUser.id}&t=${new Date().getTime()}`);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-                bankSoal = data;
-                if (bankSoal.length === 0) { questionEl.innerText = 'Hebat! Kamu sudah menjawab semua soal yang ada.'; optionsContainerEl.innerHTML = `<button class="btn-primary w-full py-3 mt-4 rounded-lg font-semibold" onclick="showPage(welcomeContainer)">Kembali</button>`; return; }
-                soalSekarangIndex = 0; skor = 0;
-                muatSoal();
-            } catch (error) { questionEl.innerText = `Oops! Terjadi Masalah: ${error.message}`; }
-        }
-        
-        function muatSoal() {
-            if (soalSekarangIndex >= bankSoal.length) {
-                questionEl.innerText = `Kuis Selesai!`;
-                optionsContainerEl.innerHTML = `<p class="text-lg">Kamu menjawab <strong>${skor}</strong> dari ${bankSoal.length} soal dengan benar!</p><button class="btn-primary w-full py-3 mt-4 rounded-lg font-semibold" onclick="showPage(welcomeContainer)">Kembali ke Menu</button>`;
-                return;
-            }
-            const soal = bankSoal[soalSekarangIndex];
-            currentQuestionText = soal.pertanyaan;
-            questionEl.innerText = soal.pertanyaan;
-            optionsContainerEl.innerHTML = '';
-            soal.opsi.forEach(opsi => {
-                const button = document.createElement('button');
-                button.innerText = opsi;
-                button.className = 'w-full py-3 rounded-lg border-2 border-slate-300 dark:border-slate-600';
-                button.onclick = () => pilihJawaban(soal, opsi);
-                optionsContainerEl.appendChild(button);
-            });
-            startTimer();
-        }
-        
-        function pilihJawaban(soal, jawabanDipilih) {
-            if (isInteractionLocked) return;
-            isInteractionLocked = true;
-            clearInterval(timerInterval);
-            Array.from(optionsContainerEl.children).forEach(btn => btn.disabled = true);
-            let correct = false;
-            if (jawabanDipilih !== null && jawabanDipilih === soal.jawabanBenar) {
-                feedbackEl.innerText = "Benar! +1 XP 🎉";
-                feedbackEl.style.color = '#22c55e';
-                correct = true;
-                skor++;
-            } else {
-                feedbackEl.innerText = jawabanDipilih === null ? `Waktu habis!` : `Salah!`;
-                feedbackEl.style.color = '#ef4444';
-                currentUser.lives--;
-                updateLivesUI();
-            }
-            submitProgress(correct ? 1 : 0, currentQuestionText);
-            questionAnsweredCount++;
-            if (questionAnsweredCount > 0 && questionAnsweredCount % 5 === 0) {
-                setTimeout(triggerInterstitialAd, 1500);
-            }
-            soalSekarangIndex++;
-            setTimeout(() => {
-                isInteractionLocked = false;
-                if (currentUser.lives <= 0) { gameOver(); }
-                else { muatSoal(); }
-            }, 2000);
-        }
-
-        async function submitProgress(xpGained, questionText) {
-            if (!tgUser) return;
-            try {
-                const response = await fetch('/api/submit_score', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user: tgUser, score: xpGained, question: questionText })
-                });
-                const data = await response.json();
-                currentUser.level = data.level;
-                currentUser.xp = data.xp;
-                currentUser.xp_needed = data.xp_needed;
-                currentUser.lives = data.lives;
-                updateProgressUI();
-                updateLivesUI();
-                if (data.level_up) { showLevelUpNotification(data.level); }
-            } catch (error) { console.error("Gagal mengirim progres:", error); }
-        }
-        
-        function updateProgressUI() {
-            levelDisplay.innerText = `Level ${currentUser.level}`;
-            progressText.innerText = `Progres: ${currentUser.xp}/${currentUser.xp_needed}`;
-            const percentage = currentUser.xp_needed > 0 ? (currentUser.xp / currentUser.xp_needed) * 100 : 0;
-            progressBar.style.width = `${percentage}%`;
-        }
-        
-        async function fetchUserProgress() {
-            if (!tgUser) return;
-            try {
-                const response = await fetch(`/api/get_user_progress?user_id=${tgUser.id}`);
-                const data = await response.json();
-                currentUser.level = data.level;
-                currentUser.xp = data.xp;
-                currentUser.xp_needed = data.xp_needed;
-                currentUser.lives = data.lives;
-                updateProgressUI();
-                updateLivesUI();
-            } catch (error) { console.error("Gagal mengambil progres user:", error); }
-        }
-
-        function startTimer() {
-            clearInterval(timerInterval);
-            timerCircle.style.transition = 'none';
-            timerCircle.style.stroke = '#22c55e';
-            timerCircle.style.strokeDasharray = 100;
-            timerCircle.style.strokeDashoffset = 0;
-            let timeLeft = 30;
-            timerText.innerText = timeLeft;
-            setTimeout(() => {
-                timerCircle.style.transition = 'stroke-dashoffset 30s linear';
-                timerCircle.style.strokeDashoffset = 100;
-            }, 100);
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                timerText.innerText = timeLeft;
-                if (timeLeft < 10) timerCircle.style.stroke = '#ef4444';
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    pilihJawaban(bankSoal[soalSekarangIndex], null);
-                }
-            }, 1000);
-        }
-
-        function showLevelUpNotification(newLevel) {
-            const toast = document.getElementById('level-up-toast');
-            document.getElementById('level-up-text').innerText = `🎉 Naik ke Level ${newLevel}! 🎉`;
-            toast.classList.remove('opacity-0', 'translate-y-10');
-            setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-10'); }, 3000);
-        }
-        
-        async function showLeaderboard() {
-            showPage(leaderboardContainer);
-            const tbody = document.getElementById('leaderboard-body');
-            tbody.innerHTML = '<p>Memuat data...</p>';
-            try {
-                const response = await fetch('/api/leaderboard');
-                const data = await response.json();
-                tbody.innerHTML = '';
-                if (data.length === 0) { tbody.innerHTML = '<p class="text-center" style="color: var(--tg-hint);">Belum ada skor.</p>'; }
-                else { data.forEach(p => { tbody.innerHTML += `<div class="flex items-center justify-between bg-slate-100 dark:bg-slate-800 p-3 rounded-lg"><span class="font-bold text-lg">${p.rank}.</span><span class="flex-1 text-left ml-4">${p.first_name}</span><span class="font-semibold">Lv. ${p.level}</span></div>`; }); }
-            } catch (error) { tbody.innerHTML = '<p class="text-center text-red-500">Gagal memuat data.</p>'; }
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-            document.documentElement.style.setProperty('--tg-bg', tg.themeParams.bg_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-text', tg.themeParams.text_color || '#000000');
-            document.documentElement.style.setProperty('--tg-button', tg.themeParams.button_color || '#3390ec');
-            document.documentElement.style.setProperty('--tg-button-text', tg.themeParams.button_text_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-hint', tg.themeParams.hint_color || '#999999');
-            
-            if (tg.initDataUnsafe?.user && tg.initDataUnsafe.user.id) {
-                tgUser = tg.initDataUnsafe.user;
-                welcomeMessageEl.innerText = `Hai, ${tgUser.first_name}!`;
-                startQuizBtn.disabled = false;
-                showLeaderboardBtn.disabled = false;
-                userStatsEl.classList.remove('hidden');
-                welcomeInfoEl.classList.remove('hidden');
-                await fetchUserProgress();
-            } else {
-                welcomeMessageEl.innerText = 'Error';
-                userStatsEl.classList.remove('hidden');
-                levelDisplay.innerText = 'Gagal memuat user';
-                progressText.innerText = 'Silakan buka aplikasi dari dalam Telegram.';
-            }
-        });
+        // ... (Sisa kode JavaScript lainnya tidak perlu diubah)
+        // Semua fungsi seperti showPage, startQuiz, muatSoal, pilihJawaban,
+        // submitProgress, updateLivesUI, dll., sudah benar.
+        // Salin seluruh bagian <script> dari jawaban lengkap terakhir.
     </script>
 </body>
 </html>
