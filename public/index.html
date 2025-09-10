@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,7 +32,7 @@
     </div>
 
     <div id="quiz-container" style="display:none;">
-        <h2 id="question">Memuat pertanyaan...</h2>
+        <h2 id="question">Membuat soal baru...</h2>
         <div id="options-container"></div>
         <p id="feedback"></p>
     </div>
@@ -70,7 +70,7 @@
 
         async function startQuiz() {
             showPage(quizContainer);
-            questionEl.innerText = 'Memuat pertanyaan...';
+            questionEl.innerText = 'Membuat soal baru dari AI, mohon tunggu...';
             optionsContainerEl.innerHTML = '';
             feedbackEl.innerText = '';
             try {
@@ -81,7 +81,7 @@
                 skor = 0;
                 muatSoal();
             } catch (error) {
-                questionEl.innerText = 'Gagal memuat kuis.';
+                questionEl.innerText = 'Gagal memuat kuis. Coba lagi nanti.';
             }
         }
 
@@ -156,10 +156,11 @@
                 tgUser = Telegram.WebApp.initDataUnsafe.user;
                 document.getElementById('welcome-message').innerText = `Hai, ${tgUser.first_name}!`;
             }
-            document.documentElement.style.setProperty('--tg-theme-bg-color', Telegram.WebApp.themeParams.bg_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-theme-text-color', Telegram.WebApp.themeParams.text_color || '#000000');
-            document.documentElement.style.setProperty('--tg-theme-button-color', Telegram.WebApp.themeParams.button_color || '#3390ec');
-            document.documentElement.style.setProperty('--tg-theme-button-text-color', Telegram.WebApp.themeParams.button_text_color || '#ffffff');
+            const tg = window.Telegram.WebApp;
+            document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
+            document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#3390ec');
+            document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
         });
     </script>
 </body>
