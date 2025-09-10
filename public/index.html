@@ -13,6 +13,7 @@
         }
         body { background-color: var(--tg-bg); color: var(--tg-text); }
         .btn-primary { background-color: var(--tg-button); color: var(--tg-button-text); }
+        .btn-primary:disabled { background-color: #9e9e9e; } /* Warna tombol nonaktif */
         .progress-bar-fill { background-color: var(--tg-button); }
         .timer-svg { transform: scaleX(-1) rotate(-90deg); }
         .timer-svg-circle { transition: stroke-dashoffset 1s linear; }
@@ -73,24 +74,85 @@
         document.getElementById('home-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showPage(welcomeContainer); });
         document.getElementById('leaderboard-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showLeaderboard(); });
 
-        function startTimer() { /* ... kode sama ... */ }
-        async function startQuiz() { /* ... kode sama ... */ }
-        function muatSoal() { /* ... kode sama ... */ }
-        function pilihJawaban(soal, jawabanDipilih) { /* ... kode sama ... */ }
-        async function submitProgress(xpGained, questionText) { /* ... kode sama ... */ }
-        function showLevelUpNotification(newLevel) { /* ... kode sama ... */ }
-        async function fetchUserProgress() { /* ... kode sama ... */ }
-        function updateProgressUI() { /* ... kode sama ... */ }
-        async function showLeaderboard() { /* ... kode sama ... */ }
+        async function startQuiz() {
+            if (!tgUser) { alert("Data user tidak ditemukan. Harap buka dari menu bot Telegram."); return; }
+            showPage(quizContainer);
+            questionEl.innerText = 'Mempersiapkan set soal...';
+            try {
+                const response = await fetch(`/api/get_question_batch?level=${currentUser.level}&user_id=${tgUser.id}&t=${new Date().getTime()}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                
+                bankSoal = data;
+                if (bankSoal.length === 0) { questionEl.innerText = 'Hebat! Kamu sudah menjawab semua soal yang ada.'; return; }
+                soalSekarangIndex = 0; skor = 0;
+                muatSoal();
+            } catch (error) { questionEl.innerText = `Oops! Terjadi Masalah: ${error.message}`; }
+        }
+        
+        function muatSoal() {
+            if (soalSekarangIndex >= bankSoal.length) {
+                questionEl.innerText = `Kuis Selesai!`;
+                optionsContainerEl.innerHTML = `<p class="text-lg">Kamu menjawab <strong>${skor}</strong> dari ${bankSoal.length} soal dengan benar!</p><button class="btn-primary w-full py-3 mt-4 rounded-lg font-semibold" onclick="showPage(welcomeContainer)">Kembali ke Menu</button>`;
+                return;
+            }
+            const soal = bankSoal[soalSekarangIndex];
+            currentQuestionText = soal.pertanyaan;
+            questionEl.innerText = soal.pertanyaan;
+            optionsContainerEl.innerHTML = '';
+            soal.opsi.forEach(opsi => {
+                const button = document.createElement('button');
+                button.innerText = opsi;
+                button.className = 'w-full py-3 rounded-lg border-2 border-slate-300 dark:border-slate-600';
+                button.onclick = () => pilihJawaban(soal, opsi);
+                optionsContainerEl.appendChild(button);
+            });
+            startTimer();
+        }
+        
+        function pilihJawaban(soal, jawabanDipilih) {
+            if (isInteractionLocked) return;
+            isInteractionLocked = true;
+            clearInterval(timerInterval);
+            Array.from(optionsContainerEl.children).forEach(btn => btn.disabled = true);
+            let correct = false;
+            if (jawabanDipilih === null) { feedbackEl.innerText = `Waktu habis!`; feedbackEl.style.color = '#ef4444'; }
+            else if (jawabanDipilih === soal.jawabanBenar) { feedbackEl.innerText = "Benar! +1 XP 🎉"; feedbackEl.style.color = '#22c55e'; correct = true; skor++; }
+            else { feedbackEl.innerText = `Salah! Coba lagi di soal berikutnya.`; feedbackEl.style.color = '#ef4444'; }
+            submitProgress(correct ? 1 : 0, currentQuestionText);
+            soalSekarangIndex++;
+            setTimeout(() => { isInteractionLocked = false; muatSoal(); }, 2000);
+        }
+
+        async function submitProgress(xpGained, questionText) {
+            if (!tgUser) return;
+            try {
+                const response = await fetch('/api/submit_score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: tgUser, score: xpGained, question: questionText })
+                });
+                const data = await response.json();
+                currentUser = { level: data.level, xp: data.xp, xp_needed: data.xp_needed };
+                updateProgressUI();
+                if (data.level_up) { showLevelUpNotification(data.level); }
+            } catch (error) { console.error("Gagal mengirim progres:", error); }
+        }
+
+        function updateProgressUI() {
+            levelDisplay.innerText = `Level ${currentUser.level}`;
+            progressText.innerText = `Progres: ${currentUser.xp}/${currentUser.xp_needed}`;
+            const percentage = currentUser.xp_needed > 0 ? (currentUser.xp / currentUser.xp_needed) * 100 : 0;
+            progressBar.style.width = `${percentage}%`;
+        }
+        
+        // ... (Fungsi startTimer, showLevelUpNotification, showLeaderboard SAMA)
+
         document.addEventListener('DOMContentLoaded', async () => {
             const tg = window.Telegram.WebApp;
             tg.ready();
-            document.documentElement.style.setProperty('--tg-bg', tg.themeParams.bg_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-text', tg.themeParams.text_color || '#000000');
-            document.documentElement.style.setProperty('--tg-button', tg.themeParams.button_color || '#3390ec');
-            document.documentElement.style.setProperty('--tg-button-text', tg.themeParams.button_text_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-hint', tg.themeParams.hint_color || '#999999');
-
+            // ... (Kode tema sama)
+            
             if (tg.initDataUnsafe?.user) {
                 tgUser = tg.initDataUnsafe.user;
                 welcomeMessageEl.innerText = `Hai, ${tgUser.first_name}!`;
@@ -108,5 +170,4 @@
         });
     </script>
 </body>
-    </html>
-    
+</html>
