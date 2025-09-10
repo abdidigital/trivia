@@ -2,6 +2,7 @@ import os
 import logging
 import json
 import datetime
+import random
 import google.generativeai as genai
 from flask import Flask, request, jsonify
 from peewee import (
@@ -53,21 +54,32 @@ init_db()
 # --- Endpoint API ---
 @app.route("/api/get_single_question", methods=["GET"])
 def get_single_question():
-    """Menghasilkan SATU soal unik dari Gemini sesuai level."""
+    """Menghasilkan SATU soal unik dari Gemini dengan TOPIK ACAK."""
+    
+    TOPIK_KUIS = [
+        "Sains dan Alam", "Sejarah Dunia", "Geografi", "Teknologi dan Komputer",
+        "Seni dan Budaya", "Film dan Musik", "Olahraga", "Mitologi", "Makanan dan Minuman"
+    ]
+    
     level = int(request.args.get('level', 0))
     if level <= 2: difficulty = "sangat mudah"
     elif level <= 5: difficulty = "mudah"
     elif level <= 10: difficulty = "sedang"
-    else: difficulty = "sulit"
+    else: difficulty = "sangat sulit"
+    
+    topik_acak = random.choice(TOPIK_KUIS)
 
     prompt_kuis = f"""
-    Buatkan 1 pertanyaan kuis pilihan ganda tentang pengetahuan umum acak. 
+    Buatkan 1 pertanyaan kuis pilihan ganda tentang topik "{topik_acak}".
     Level kesulitan: {difficulty}. Bahasa: Indonesia.
     Format output HARUS berupa objek JSON tunggal yang valid, tanpa teks atau penjelasan tambahan.
     Objek JSON harus memiliki kunci: "pertanyaan", "opsi" (array 4 string), dan "jawabanBenar".
     """
     try:
         if not GEMINI_API_KEY: raise ValueError("GEMINI_API_KEY tidak diatur")
+        
+        logging.info(f"Meminta soal baru dari Gemini dengan topik: {topik_acak}")
+        
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt_kuis)
         raw_response = response.text.strip().replace("```json", "").replace("```", "").strip()
@@ -83,7 +95,7 @@ def submit_score():
     data = request.json
     try:
         user_data = data["user"]
-        correct_answer_increment = data["score"] # Akan bernilai 1 atau 0
+        correct_answer_increment = data["score"]
         
         db.connect(reuse_if_open=True)
         player, created = Player.get_or_create(
@@ -151,4 +163,3 @@ def get_leaderboard():
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     return 'ok', 200
-        
