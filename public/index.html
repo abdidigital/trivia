@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* 3. Menyesuaikan warna tema dari Telegram */
         :root {
             --tg-bg: #ffffff;
             --tg-text: #000000;
@@ -15,17 +14,9 @@
             --tg-button-text: #ffffff;
             --tg-hint: #999999;
         }
-        body {
-            background-color: var(--tg-bg);
-            color: var(--tg-text);
-        }
-        .btn-primary {
-            background-color: var(--tg-button);
-            color: var(--tg-button-text);
-        }
-        .progress-bar-fill {
-            background-color: var(--tg-button);
-        }
+        body { background-color: var(--tg-bg); color: var(--tg-text); }
+        .btn-primary { background-color: var(--tg-button); color: var(--tg-button-text); }
+        .progress-bar-fill { background-color: var(--tg-button); }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -75,12 +66,13 @@
         const progressText = document.getElementById('progress-text');
         const progressBar = document.getElementById('progress-bar');
         const timerBar = document.getElementById('timer-bar');
+        const welcomeMessageEl = document.getElementById('welcome-message');
         
         let bankSoal = [], soalSekarangIndex = 0, skor = 0, tgUser = null;
         let currentUser = { level: 0, xp: 0, xp_needed: 10 };
-        let timerInterval; // Variabel untuk menyimpan interval timer
+        let timerInterval;
 
-        // --- Logika Navigasi Halaman ---
+        // --- Navigasi & Logika Utama ---
         function showPage(page) {
             [welcomeContainer, quizContainer, leaderboardContainer].forEach(p => p.classList.add('hidden'));
             page.classList.remove('hidden');
@@ -90,29 +82,49 @@
         document.getElementById('show-leaderboard-btn').addEventListener('click', showLeaderboard);
         document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
 
-        // --- Logika Timer ---
+        async function fetchUserProgress() {
+            if (!tgUser) return;
+            try {
+                const response = await fetch(`/api/get_user_progress?user_id=${tgUser.id}`);
+                if (!response.ok) return;
+                const data = await response.json();
+                currentUser.level = data.level;
+                currentUser.xp = data.xp;
+                currentUser.xp_needed = data.xp_needed;
+                updateProgressUI();
+            } catch (error) { console.error("Gagal mengambil progres user:", error); }
+        }
+        
+        function updateProgressUI() {
+            levelDisplay.innerText = `Level ${currentUser.level}`;
+            progressText.innerText = `Progres: ${currentUser.xp}/${currentUser.xp_needed}`;
+            const percentage = currentUser.xp_needed > 0 ? (currentUser.xp / currentUser.xp_needed) * 100 : 0;
+            progressBar.style.width = `${percentage}%`;
+        }
+        
         function startTimer() {
             clearInterval(timerInterval);
-            timerBar.classList.remove('transition-all');
+            timerBar.style.transition = 'none';
             timerBar.style.width = '100%';
-            timerBar.style.backgroundColor = '#22c55e'; // green-500
+            timerBar.style.backgroundColor = '#22c55e';
+            
+            // Force reflow to apply non-transitioned style
+            void timerBar.offsetWidth; 
+
+            timerBar.style.transition = 'width 30s linear';
+            timerBar.style.width = '0%';
 
             let timeLeft = 30;
-            setTimeout(() => timerBar.classList.add('transition-all'), 100); // Re-enable transition
-
             timerInterval = setInterval(() => {
                 timeLeft--;
-                const percentage = (timeLeft / 30) * 100;
-                timerBar.style.width = `${percentage}%`;
-                if (timeLeft < 10) timerBar.style.backgroundColor = '#ef4444'; // red-500
+                if (timeLeft < 10) timerBar.style.backgroundColor = '#ef4444';
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    pilihJawaban(null); // Anggap jawaban salah jika waktu habis
+                    pilihJawaban(null);
                 }
             }, 1000);
         }
 
-        // --- Logika Utama Kuis ---
         async function startQuiz() {
             showPage(quizContainer);
             questionEl.innerText = 'Membuat soal baru dari AI, mohon tunggu...';
@@ -122,14 +134,14 @@
                 bankSoal = await response.json();
                 soalSekarangIndex = 0; skor = 0;
                 muatSoal();
-            } catch (error) { questionEl.innerText = 'Gagal memuat kuis.'; }
+            } catch (error) { questionEl.innerText = 'Gagal memuat kuis. Coba lagi nanti.'; }
         }
         
         function muatSoal() {
             optionsContainerEl.innerHTML = '';
             feedbackEl.innerText = '';
             if (soalSekarangIndex >= bankSoal.length) {
-                clearInterval(timerInterval); // Hentikan timer di akhir kuis
+                clearInterval(timerInterval);
                 questionEl.innerText = `Kuis Selesai!`;
                 optionsContainerEl.innerHTML = `<p class="text-lg">Kamu menjawab <strong>${skor}</strong> soal dengan benar!</p><button class="btn-primary w-full py-3 mt-4 rounded-lg font-semibold" onclick="showPage(welcomeContainer)">Selesai</button>`;
                 submitScore();
@@ -144,14 +156,13 @@
                 button.onclick = () => pilihJawaban(opsi);
                 optionsContainerEl.appendChild(button);
             });
-            startTimer(); // Mulai timer saat soal baru dimuat
+            startTimer();
         }
         
         function pilihJawaban(jawabanDipilih) {
-            clearInterval(timerInterval); // Hentikan timer saat jawaban dipilih
+            clearInterval(timerInterval);
             Array.from(optionsContainerEl.children).forEach(btn => btn.disabled = true);
             const soal = bankSoal[soalSekarangIndex];
-            
             if (jawabanDipilih === null) {
                 feedbackEl.innerText = `Waktu habis! Jawaban: ${soal.jawabanBenar}`;
                 feedbackEl.style.color = '#ef4444';
@@ -167,11 +178,18 @@
             setTimeout(muatSoal, 2000);
         }
 
-        // --- Logika User & Leaderboard ---
-        async function fetchUserProgress() { /* ... kode sama persis seperti sebelumnya ... */ }
-        function updateProgressUI() { /* ... kode sama persis seperti sebelumnya ... */ }
-        async function submitScore() { /* ... kode sama persis seperti sebelumnya ... */ }
-        
+        async function submitScore() {
+            if (!tgUser) return;
+            try {
+                await fetch('/api/submit_score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: tgUser, score: skor })
+                });
+                await fetchUserProgress();
+            } catch (error) { console.error("Gagal mengirim skor:", error); }
+        }
+
         async function showLeaderboard() {
             showPage(leaderboardContainer);
             const tbody = document.getElementById('leaderboard-body');
@@ -201,8 +219,22 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const tg = window.Telegram.WebApp;
             tg.ready();
-            // Salin sisa kode inisialisasi dari sebelumnya di sini
-            // (mengambil data user, mengatur tema, dll)
+            
+            // Mengatur warna tema dari Telegram
+            document.documentElement.style.setProperty('--tg-bg', tg.themeParams.bg_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-text', tg.themeParams.text_color || '#000000');
+            document.documentElement.style.setProperty('--tg-button', tg.themeParams.button_color || '#3390ec');
+            document.documentElement.style.setProperty('--tg-button-text', tg.themeParams.button_text_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-hint', tg.themeParams.hint_color || '#999999');
+
+            // Mengambil data user dan progres awal
+            if (tg.initDataUnsafe?.user) {
+                tgUser = tg.initDataUnsafe.user;
+                welcomeMessageEl.innerText = `Hai, ${tgUser.first_name}!`;
+                await fetchUserProgress();
+            } else {
+                welcomeMessageEl.innerText = `Hai, Guest!`; // Fallback jika data user tidak ada
+            }
         });
     </script>
 </body>
