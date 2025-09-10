@@ -1,27 +1,53 @@
 [
-  {
-    "pertanyaan": "Apa ibukota Indonesia?",
-    "opsi": ["Bandung", "Surabaya", "Jakarta", "Medan"],
-    "jawabanBenar": "Jakarta"
-  },
-  {
-    "pertanyaan": "Siapakah presiden pertama Indonesia?",
-    "opsi": ["Soeharto", "Soekarno", "B.J. Habibie", "Joko Widodo"],
-    "jawabanBenar": "Soekarno"
-  },
-  {
-    "pertanyaan": "Berapakah hasil dari 5 x 5?",
-    "opsi": ["10", "20", "25", "30"],
-    "jawabanBenar": "25"
-  },
-  {
-    "pertanyaan": "Planet terdekat dari Matahari adalah...",
-    "opsi": ["Venus", "Mars", "Merkurius", "Bumi"],
-    "jawabanBenar": "Merkurius"
-  },
-  {
-    "pertanyaan": "Lagu kebangsaan Indonesia adalah...",
-    "opsi": ["Indonesia Pusaka", "Garuda Pancasila", "Indonesia Raya", "Satu Nusa Satu Bangsa"],
-    "jawabanBenar": "Indonesia Raya"
-  }
+  { "pertanyaan": "Apa ibukota Indonesia?", "opsi": ["Bandung", "Surabaya", "Jakarta", "Medan"], "jawabanBenar": "Jakarta" },
+  { "pertanyaan": "Planet terdekat dari Matahari adalah...", "opsi": ["Venus", "Mars", "Merkurius", "Bumi"], "jawabanBenar": "Merkurius" },
+  { "pertanyaan": "Siapakah penemu bola lampu pijar?", "opsi": ["Albert Einstein", "Isaac Newton", "Thomas Edison", "Nikola Tesla"], "jawabanBenar": "Thomas Edison" },
+  { "pertanyaan": "Gunung tertinggi di dunia adalah...", "opsi": ["Gunung Fuji", "Gunung Everest", "Gunung Kilimanjaro", "Gunung K2"], "jawabanBenar": "Gunung Everest" },
+  { "pertanyaan": "Negara manakah yang dikenal sebagai 'Negeri Matahari Terbit'?", "opsi": ["Cina", "Korea Selatan", "Jepang", "Thailand"], "jawabanBenar": "Jepang" },
+  { "pertanyaan": "Berapa jumlah provinsi di Indonesia saat ini (per 2024)?", "opsi": ["34", "36", "37", "38"], "jawabanBenar": "38" },
+  { "pertanyaan": "Apa nama samudra terluas di dunia?", "opsi": ["Atlantik", "Hindia", "Arktik", "Pasifik"], "jawabanBenar": "Pasifik" },
+  { "pertanyaan": "Siapa penulis novel 'Laskar Pelangi'?", "opsi": ["Tere Liye", "Pramoedya Ananta Toer", "Andrea Hirata", "Dewi Lestari"], "jawabanBenar": "Andrea Hirata" },
+  { "pertanyaan": "Apa kepanjangan dari CPU dalam komputer?", "opsi": ["Central Processing Unit", "Computer Personal Unit", "Central Power Unit", "Computer Processor Unit"], "jawabanBenar": "Central Processing Unit" },
+  { "pertanyaan": "Warna apa yang dihasilkan dari campuran warna merah dan kuning?", "opsi": ["Hijau", "Ungu", "Coklat", "Oranye"], "jawabanBenar": "Oranye" },
+  { "pertanyaan": "Hewan darat tercepat di dunia adalah...", "opsi": ["Singa", "Kuda", "Cheetah", "Gazelle"], "jawabanBenar": "Cheetah" },
+  { "pertanyaan": "Apa mata uang negara Jepang?", "opsi": ["Won", "Yuan", "Yen", "Ringgit"], "jawabanBenar": "Yen" },
+  { "pertanyaan": "Pada tahun berapa Indonesia merdeka?", "opsi": ["1942", "1945", "1949", "1950"], "jawabanBenar": "1945" },
+  { "pertanyaan": "Siapa yang melukis Monalisa?", "opsi": ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Michelangelo"], "jawabanBenar": "Leonardo da Vinci" },
+  { "pertanyaan": "Apa rumus kimia untuk air?", "opsi": ["CO2", "O2", "H2O", "NaCl"], "jawabanBenar": "H2O" },
+  { "pertanyaan": "Benua terluas di dunia adalah...", "opsi": ["Afrika", "Eropa", "Amerika", "Asia"], "jawabanBenar": "Asia" },
+  { "pertanyaan": "Apa nama sungai terpanjang di dunia?", "opsi": ["Sungai Nil", "Sungai Amazon", "Sungai Yangtze", "Sungai Mississippi"], "jawabanBenar": "Sungai Nil" },
+  { "pertanyaan": "Negara dengan populasi terbanyak di dunia adalah...", "opsi": ["India", "Amerika Serikat", "Indonesia", "Cina"], "jawabanBenar": "India" },
+  { "pertanyaan": "Siapakah presiden pertama Amerika Serikat?", "opsi": ["Abraham Lincoln", "Thomas Jefferson", "John Adams", "George Washington"], "jawabanBenar": "George Washington" },
+  { "pertanyaan": "Apa nama galaksi tempat Tata Surya kita berada?", "opsi": ["Andromeda", "Triangulum", "Bima Sakti", "Magellan"], "jawabanBenar": "Bima Sakti" },
+  { "pertanyaan": "Bahan utama pembuatan kaca adalah...", "opsi": ["Pasir", "Tanah liat", "Batu kapur", "Gipsum"], "jawabanBenar": "Pasir" },
+  { "pertanyaan": "Unsur kimia apa yang dilambangkan dengan 'Fe'?", "opsi": ["Emas", "Perak", "Besi", "Tembaga"], "jawabanBenar": "Besi" },
+  { "pertanyaan": "Ibukota Australia adalah...", "opsi": ["Sydney", "Melbourne", "Canberra", "Perth"], "jawabanBenar": "Canberra" },
+  { "pertanyaan": "Alat musik petik yang berasal dari Spanyol adalah...", "opsi": ["Biola", "Gitar", "Harpa", "Ukulele"], "jawabanBenar": "Gitar" },
+  { "pertanyaan": "Berapa jumlah pemain dalam satu tim sepak bola?", "opsi": ["9", "10", "11", "12"], "jawabanBenar": "11" },
+  { "pertanyaan": "Apa nama lain dari vitamin C?", "opsi": ["Asam folat", "Asam askorbat", "Retinol", "Tiamin"], "jawabanBenar": "Asam askorbat" },
+  { "pertanyaan": "Siapa dewa petir dalam mitologi Yunani?", "opsi": ["Poseidon", "Hades", "Apollo", "Zeus"], "jawabanBenar": "Zeus" },
+  { "pertanyaan": "Negara manakah yang memiliki menara Eiffel?", "opsi": ["Italia", "Inggris", "Prancis", "Jerman"], "jawabanBenar": "Prancis" },
+  { "pertanyaan": "Apa nama gurun pasir terbesar di dunia?", "opsi": ["Gurun Gobi", "Gurun Kalahari", "Gurun Sahara", "Gurun Arab"], "jawabanBenar": "Gurun Sahara" },
+  { "pertanyaan": "Proses tumbuhan membuat makanannya sendiri disebut...", "opsi": ["Respirasi", "Fotosintesis", "Transpirasi", "Evaporasi"], "jawabanBenar": "Fotosintesis" },
+  { "pertanyaan": "Bahasa resmi negara Brazil adalah...", "opsi": ["Spanyol", "Inggris", "Prancis", "Portugis"], "jawabanBenar": "Portugis" },
+  { "pertanyaan": "Siapa yang menulis drama 'Romeo and Juliet'?", "opsi": ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"], "jawabanBenar": "William Shakespeare" },
+  { "pertanyaan": "Apa nama ibukota dari negara Rusia?", "opsi": ["St. Petersburg", "Kyiv", "Minsk", "Moskow"], "jawabanBenar": "Moskow" },
+  { "pertanyaan": "Berapa jumlah sisi pada sebuah kubus?", "opsi": ["4", "6", "8", "12"], "jawabanBenar": "6" },
+  { "pertanyaan": "Lomba balap sepeda paling bergengsi di Prancis adalah...", "opsi": ["Giro d'Italia", "Vuelta a España", "Tour de France", "Paris-Roubaix"], "jawabanBenar": "Tour de France" },
+  { "pertanyaan": "Apa nama planet terbesar di Tata Surya?", "opsi": ["Saturnus", "Jupiter", "Uranus", "Neptunus"], "jawabanBenar": "Jupiter" },
+  { "pertanyaan": "Tembok Besar Cina dibangun untuk melindungi dari serangan bangsa...", "opsi": ["Jepang", "Korea", "Mongol", "Rusia"], "jawabanBenar": "Mongol" },
+  { "pertanyaan": "Apa nama festival warna yang dirayakan di India?", "opsi": ["Diwali", "Holi", "Navratri", "Dussehra"], "jawabanBenar": "Holi" },
+  { "pertanyaan": "Siapa sutradara film 'Titanic' (1997)?", "opsi": ["Steven Spielberg", "George Lucas", "James Cameron", "Christopher Nolan"], "jawabanBenar": "James Cameron" },
+  { "pertanyaan": "Komponen utama dalam udara yang kita hirup adalah...", "opsi": ["Oksigen", "Karbondioksida", "Nitrogen", "Argon"], "jawabanBenar": "Nitrogen" },
+  { "pertanyaan": "Di kota manakah Olimpiade modern pertama diadakan pada tahun 1896?", "opsi": ["Paris", "London", "Roma", "Athena"], "jawabanBenar": "Athena" },
+  { "pertanyaan": "Apa nama lain dari Kepulauan Maluku?", "opsi": ["Kepulauan Rempah-rempah", "Kepulauan Emas", "Kepulauan Mutiara", "Kepulauan Cendrawasih"], "jawabanBenar": "Kepulauan Rempah-rempah" },
+  { "pertanyaan": "Alat untuk mengukur suhu adalah...", "opsi": ["Barometer", "Higrometer", "Termometer", "Anemometer"], "jawabanBenar": "Termometer" },
+  { "pertanyaan": "Siapa tokoh utama dalam serial novel Harry Potter?", "opsi": ["Ron Weasley", "Hermione Granger", "Albus Dumbledore", "Harry Potter"], "jawabanBenar": "Harry Potter" },
+  { "pertanyaan": "Apa nama benua yang tertutup es di kutub selatan?", "opsi": ["Arktik", "Greenland", "Antarktika", "Siberia"], "jawabanBenar": "Antarktika" },
+  { "pertanyaan": "Panda adalah hewan endemik dari negara...", "opsi": ["Jepang", "India", "Cina", "Vietnam"], "jawabanBenar": "Cina" },
+  { "pertanyaan": "Bahan dasar pembuatan cokelat adalah biji...", "opsi": ["Kopi", "Kakao", "Vanila", "Kacang"], "jawabanBenar": "Kakao" },
+  { "pertanyaan": "Apa nama jembatan ikonik di San Francisco yang berwarna merah?", "opsi": ["Brooklyn Bridge", "Tower Bridge", "Golden Gate Bridge", "Sydney Harbour Bridge"], "jawabanBenar": "Golden Gate Bridge" },
+  { "pertanyaan": "Siapa yang dijuluki 'Bapak Proklamator Indonesia' selain Soekarno?", "opsi": ["Sutan Sjahrir", "Mohammad Hatta", "Tan Malaka", "Ki Hajar Dewantara"], "jawabanBenar": "Mohammad Hatta" },
+  { "pertanyaan": "Berapa jumlah hari dalam setahun pada tahun kabisat?", "opsi": ["364", "365", "366", "367"], "jawabanBenar": "366" },
+  { "pertanyaan": "Apa nama mata uang resmi negara Inggris?", "opsi": ["Euro", "Franc", "Pound Sterling", "Dolar"], "jawabanBenar": "Pound Sterling" }
 ]
