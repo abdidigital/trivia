@@ -9,6 +9,7 @@
 
     <meta name="monetag" content="456e681fa51bd728d62ad7e576374311">
     
+    <script>(function(s){s.dataset.zone='9853421',s.src='https://gizokraijaw.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
     
     <style>
         :root {
@@ -65,7 +66,8 @@
         <div id="game-over-container" class="hidden text-center space-y-4 pt-10">
             <div class="text-6xl">😭</div>
             <h2 class="text-3xl font-bold text-red-500">Nyawa Habis!</h2>
-            <p style="color: var(--tg-hint);">Fitur tambah nyawa sedang dalam perbaikan.</p>
+            <p style="color: var(--tg-hint);">Tonton iklan untuk mendapatkan +1 nyawa!</p>
+            <button id="watch-ad-btn" class="btn-primary w-full py-3 rounded-lg font-semibold">Tonton Iklan (+1 Nyawa)</button>
             <button id="back-to-menu-gameover-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold">Kembali ke Menu</button>
         </div>
 
@@ -81,7 +83,7 @@
     </div>
     
     <script>
-        const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), gameOverContainer = document.getElementById('game-over-container'), questionEl = document.getElementById('question'), optionsContainerEl = document.getElementById('options-container'), feedbackEl = document.getElementById('feedback'), levelDisplay = document.getElementById('level-display'), progressText = document.getElementById('progress-text'), progressBar = document.getElementById('progress-bar'), timerCircle = document.getElementById('timer-circle'), timerText = document.getElementById('timer-text'), welcomeMessageEl = document.getElementById('welcome-message'), startQuizBtn = document.getElementById('start-quiz-btn'), showLeaderboardBtn = document.getElementById('show-leaderboard-btn'), userStatsEl = document.getElementById('user-stats'), welcomeInfoEl = document.getElementById('welcome-info'), livesWelcomeEl = document.getElementById('lives-display-welcome'), livesQuizEl = document.getElementById('lives-display-quiz');
+        const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), gameOverContainer = document.getElementById('game-over-container'), questionEl = document.getElementById('question'), optionsContainerEl = document.getElementById('options-container'), feedbackEl = document.getElementById('feedback'), levelDisplay = document.getElementById('level-display'), progressText = document.getElementById('progress-text'), progressBar = document.getElementById('progress-bar'), timerCircle = document.getElementById('timer-circle'), timerText = document.getElementById('timer-text'), welcomeMessageEl = document.getElementById('welcome-message'), startQuizBtn = document.getElementById('start-quiz-btn'), showLeaderboardBtn = document.getElementById('show-leaderboard-btn'), userStatsEl = document.getElementById('user-stats'), welcomeInfoEl = document.getElementById('welcome-info'), livesWelcomeEl = document.getElementById('lives-display-welcome'), livesQuizEl = document.getElementById('lives-display-quiz'), watchAdBtn = document.getElementById('watch-ad-btn');
         
         let tgUser = null, timerInterval, isInteractionLocked = false, bankSoal = [], soalSekarangIndex = 0, skor = 0, currentQuestionText = "", questionAnsweredCount = 0;
         let currentUser = { level: 0, xp: 0, xp_needed: 10, lives: 3 };
@@ -90,17 +92,45 @@
         
         startQuizBtn.addEventListener('click', () => { triggerInterstitialAd(); startQuiz(); });
         showLeaderboardBtn.addEventListener('click', () => { triggerInterstitialAd(); showLeaderboard(); });
+        watchAdBtn.addEventListener('click', triggerRewardAd);
         document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
         document.getElementById('back-to-menu-gameover-btn').addEventListener('click', () => showPage(welcomeContainer));
         document.getElementById('home-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showPage(welcomeContainer); });
         document.getElementById('leaderboard-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showLeaderboard(); });
 
         function triggerInterstitialAd() {
-            console.log("Interstitial Ad Triggered");
-            // Skrip On-Click yang dipasang di <head> biasanya bekerja otomatis
-            // saat navigasi atau klik signifikan terjadi.
-            // Kita tidak perlu menambahkan kode di sini kecuali Monetag memberikan instruksi spesifik.
+            console.log("Interstitial Ad event triggered for Vignette.");
+            // Script Vignette yang terpasang akan mendeteksi klik ini
+            // dan memutuskan secara otomatis apakah akan menampilkan iklan.
         }
+
+        function triggerRewardAd() {
+            console.log("Reward Ad event triggered for Vignette.");
+            watchAdBtn.disabled = true;
+            watchAdBtn.innerText = 'Memuat iklan...';
+            
+            // Kita beri jeda agar script Vignette sempat menampilkan iklan
+            setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/add_life', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: tgUser }) });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        currentUser.lives = data.lives;
+                        updateLivesUI();
+                        showPage(welcomeContainer);
+                    } else { throw new Error(data.error); }
+                } catch (error) { alert('Gagal mendapatkan nyawa. Coba lagi.'); }
+                finally { watchAdBtn.disabled = false; watchAdBtn.innerText = 'Tonton Iklan (+1 Nyawa)'; }
+            }, 2000);
+        }
+
+        function updateLivesUI() {
+            const hearts = '❤️'.repeat(currentUser.lives) + '🖤'.repeat(Math.max(0, 3 - currentUser.lives));
+            livesWelcomeEl.innerHTML = hearts;
+            livesQuizEl.innerHTML = hearts;
+        }
+
+        function gameOver() { clearInterval(timerInterval); showPage(gameOverContainer); }
 
         async function startQuiz() {
             if (!tgUser) { alert("Data user tidak ditemukan. Harap buka dari menu bot Telegram."); return; }
