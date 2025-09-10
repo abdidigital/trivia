@@ -90,6 +90,38 @@
         document.getElementById('home-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showPage(welcomeContainer); });
         document.getElementById('leaderboard-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showLeaderboard(); });
 
+        async function startQuiz() {
+            showPage(quizContainer);
+            questionEl.innerText = 'Mempersiapkan set soal unik untukmu...';
+            optionsContainerEl.innerHTML = '';
+            feedbackEl.innerText = '';
+            
+            try {
+                const response = await fetch(`/api/get_question_batch?level=${currentUser.level}&user_id=${tgUser.id}&t=${new Date().getTime()}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                bankSoal = data;
+                
+                if (bankSoal.length === 0) {
+                    questionEl.innerText = 'Luar biasa! Kamu sudah menjawab semua soal yang ada.';
+                    optionsContainerEl.innerHTML = '<p>Coba lagi nanti untuk set soal yang baru!</p>';
+                    return;
+                }
+                
+                soalSekarangIndex = 0; 
+                skor = 0;
+                muatSoal();
+            } catch (error) {
+                questionEl.innerText = 'Oops! Terjadi Masalah';
+                optionsContainerEl.innerHTML = `<p class="text-red-500 font-mono text-xs">${error.message}</p>`;
+            }
+        }
+
+        // ... (Sisa kode di index.html TIDAK PERLU DIUBAH) ...
         function startTimer() {
             clearInterval(timerInterval);
             timerCircle.style.transition = 'none';
@@ -114,32 +146,6 @@
                     pilihJawaban(bankSoal[soalSekarangIndex], null);
                 }
             }, 1000);
-        }
-
-        async function startQuiz() {
-            showPage(quizContainer);
-            questionEl.innerText = 'Mempersiapkan set soal unik untukmu...';
-            optionsContainerEl.innerHTML = '';
-            feedbackEl.innerText = '';
-            
-            try {
-                const response = await fetch(`/api/get_question_batch?level=${currentUser.level}&user_id=${tgUser.id}&t=${new Date().getTime()}`);
-                if (!response.ok) throw new Error('Gagal memuat soal.');
-                
-                bankSoal = await response.json();
-                
-                if (bankSoal.length === 0) {
-                    questionEl.innerText = 'Luar biasa! Kamu sudah menjawab semua soal yang ada.';
-                    optionsContainerEl.innerHTML = '<p>Coba lagi nanti untuk set soal yang baru!</p>';
-                    return;
-                }
-                
-                soalSekarangIndex = 0; 
-                skor = 0;
-                muatSoal();
-            } catch (error) {
-                questionEl.innerText = 'Gagal memuat kuis. Coba lagi nanti.';
-            }
         }
 
         function muatSoal() {
@@ -182,7 +188,7 @@
                 feedbackEl.innerText = "Benar! +1 XP 🎉";
                 feedbackEl.style.color = '#22c55e';
                 correct = true;
-                skor++; // Tambah skor sesi ini
+                skor++;
             } else {
                 feedbackEl.innerText = `Salah! Coba lagi di soal berikutnya.`;
                 feedbackEl.style.color = '#ef4444';
@@ -277,4 +283,5 @@
         });
     </script>
 </body>
-</html>
+    </html>
+    
