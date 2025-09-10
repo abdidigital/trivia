@@ -6,11 +6,11 @@
     <title>Kuis Level Up</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="sw.js" type="javascript"></script>
+
     <meta name="monetag" content="456e681fa51bd728d62ad7e576374311">
+    
     <script src="https://fpyf8.com/88/tag.min.js" data-zone="169939" async data-cfasync="false"></script>
-    <script>(s=>{s.dataset.zone='9853475',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-    <script>(function(s){s.dataset.zone='9853421',s.src='https://gizokraijaw.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+    
     <style>
         :root {
             --tg-bg: #ffffff; --tg-text: #000000; --tg-button: #3390ec;
@@ -66,8 +66,7 @@
         <div id="game-over-container" class="hidden text-center space-y-4 pt-10">
             <div class="text-6xl">😭</div>
             <h2 class="text-3xl font-bold text-red-500">Nyawa Habis!</h2>
-            <p style="color: var(--tg-hint);">Tonton iklan untuk mendapatkan +1 nyawa!</p>
-            <button id="watch-ad-btn" class="btn-primary w-full py-3 rounded-lg font-semibold">Tonton Iklan (+1 Nyawa)</button>
+            <p style="color: var(--tg-hint);">Fitur tambah nyawa sedang dalam perbaikan.</p>
             <button id="back-to-menu-gameover-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold">Kembali ke Menu</button>
         </div>
 
@@ -81,13 +80,9 @@
             <span id="level-up-text" class="font-bold text-lg"></span>
         </div>
     </div>
-
-    <div id="monetag-banner-container" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full flex justify-center items-center h-16 bg-slate-100 dark:bg-slate-800">
-        <span style="color: var(--tg-hint);">Area Iklan Banner</span>
-    </div>
     
     <script>
-        const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), gameOverContainer = document.getElementById('game-over-container'), questionEl = document.getElementById('question'), optionsContainerEl = document.getElementById('options-container'), feedbackEl = document.getElementById('feedback'), levelDisplay = document.getElementById('level-display'), progressText = document.getElementById('progress-text'), progressBar = document.getElementById('progress-bar'), timerCircle = document.getElementById('timer-circle'), timerText = document.getElementById('timer-text'), welcomeMessageEl = document.getElementById('welcome-message'), startQuizBtn = document.getElementById('start-quiz-btn'), showLeaderboardBtn = document.getElementById('show-leaderboard-btn'), userStatsEl = document.getElementById('user-stats'), welcomeInfoEl = document.getElementById('welcome-info'), livesWelcomeEl = document.getElementById('lives-display-welcome'), livesQuizEl = document.getElementById('lives-display-quiz'), watchAdBtn = document.getElementById('watch-ad-btn');
+        const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), gameOverContainer = document.getElementById('game-over-container'), questionEl = document.getElementById('question'), optionsContainerEl = document.getElementById('options-container'), feedbackEl = document.getElementById('feedback'), levelDisplay = document.getElementById('level-display'), progressText = document.getElementById('progress-text'), progressBar = document.getElementById('progress-bar'), timerCircle = document.getElementById('timer-circle'), timerText = document.getElementById('timer-text'), welcomeMessageEl = document.getElementById('welcome-message'), startQuizBtn = document.getElementById('start-quiz-btn'), showLeaderboardBtn = document.getElementById('show-leaderboard-btn'), userStatsEl = document.getElementById('user-stats'), welcomeInfoEl = document.getElementById('welcome-info'), livesWelcomeEl = document.getElementById('lives-display-welcome'), livesQuizEl = document.getElementById('lives-display-quiz');
         
         let tgUser = null, timerInterval, isInteractionLocked = false, bankSoal = [], soalSekarangIndex = 0, skor = 0, currentQuestionText = "", questionAnsweredCount = 0;
         let currentUser = { level: 0, xp: 0, xp_needed: 10, lives: 3 };
@@ -96,7 +91,6 @@
         
         startQuizBtn.addEventListener('click', () => { triggerInterstitialAd(); startQuiz(); });
         showLeaderboardBtn.addEventListener('click', () => { triggerInterstitialAd(); showLeaderboard(); });
-        watchAdBtn.addEventListener('click', triggerRewardAd);
         document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
         document.getElementById('back-to-menu-gameover-btn').addEventListener('click', () => showPage(welcomeContainer));
         document.getElementById('home-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showPage(welcomeContainer); });
@@ -104,37 +98,13 @@
 
         function triggerInterstitialAd() {
             console.log("Interstitial Ad Triggered");
-            // 3. GANTI DENGAN KODE ON-CLICK (POPUP) DARI MONETAG
+            // Skrip On-Click yang dipasang di <head> biasanya bekerja otomatis
+            // saat navigasi atau klik signifikan terjadi.
+            // Kita tidak perlu menambahkan kode di sini kecuali Monetag memberikan instruksi spesifik.
         }
-
-        function triggerRewardAd() {
-            console.log("Reward Ad Triggered");
-            // 4. GANTI DENGAN KODE REWARD (VIGNETTE) DARI MONETAG
-            watchAdBtn.disabled = true;
-            watchAdBtn.innerText = 'Memuat iklan...';
-            setTimeout(async () => {
-                try {
-                    const response = await fetch('/api/add_life', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: tgUser }) });
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        currentUser.lives = data.lives;
-                        updateLivesUI();
-                        showPage(welcomeContainer);
-                    } else { throw new Error(data.error); }
-                } catch (error) { alert('Gagal mendapatkan nyawa. Coba lagi.'); }
-                finally { watchAdBtn.disabled = false; watchAdBtn.innerText = 'Tonton Iklan (+1 Nyawa)'; }
-            }, 2000);
-        }
-
-        function updateLivesUI() {
-            const hearts = '❤️'.repeat(currentUser.lives) + '🖤'.repeat(Math.max(0, 3 - currentUser.lives));
-            livesWelcomeEl.innerHTML = hearts;
-            livesQuizEl.innerHTML = hearts;
-        }
-
-        function gameOver() { clearInterval(timerInterval); showPage(gameOverContainer); }
 
         async function startQuiz() {
+            if (!tgUser) { alert("Data user tidak ditemukan. Harap buka dari menu bot Telegram."); return; }
             if (currentUser.lives <= 0) { gameOver(); return; }
             showPage(quizContainer);
             questionEl.innerText = 'Mempersiapkan set soal...';
@@ -211,7 +181,7 @@
                 currentUser.level = data.level;
                 currentUser.xp = data.xp;
                 currentUser.xp_needed = data.xp_needed;
-                currentUser.lives = data.lives; // Terima nyawa terbaru dari backend
+                currentUser.lives = data.lives;
                 updateProgressUI();
                 updateLivesUI();
                 if (data.level_up) { showLevelUpNotification(data.level); }
