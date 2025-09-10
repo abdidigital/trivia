@@ -119,7 +119,7 @@
         }
 
         async function muatSoal() {
-            if (isInteractionLocked) return;
+            // isInteractionLocked = true dipindahkan ke sini
             isInteractionLocked = true;
 
             questionEl.innerText = 'Membuat soal baru...';
@@ -139,10 +139,10 @@
                     optionsContainerEl.appendChild(button);
                 });
                 startTimer();
-                isInteractionLocked = false;
+                isInteractionLocked = false; // Buka kunci setelah soal siap
             } catch (error) {
                 questionEl.innerText = 'Gagal memuat kuis. Coba lagi.';
-                isInteractionLocked = false;
+                isInteractionLocked = false; // Buka kunci jika ada error
             }
         }
 
@@ -167,11 +167,17 @@
             }
 
             submitProgress(correct ? 1 : 0);
+            
+            // Jeda 2 detik sebelum memuat soal baru
             setTimeout(muatSoal, 2000);
         }
         
         async function submitProgress(xpGained) {
-            if (!tgUser) { isInteractionLocked = false; return; }
+            if (!tgUser) {
+                // Jika tidak ada user, buka kunci untuk melanjutkan
+                isInteractionLocked = false;
+                return;
+            }
             try {
                 const response = await fetch('/api/submit_score', {
                     method: 'POST',
@@ -242,4 +248,5 @@
         });
     </script>
 </body>
-</html>
+                        </html>
+    
