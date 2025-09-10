@@ -119,14 +119,16 @@
         }
 
         async function muatSoal() {
-            // isInteractionLocked = true dipindahkan ke sini
             isInteractionLocked = true;
 
             questionEl.innerText = 'Membuat soal baru...';
             optionsContainerEl.innerHTML = '';
             feedbackEl.innerText = '';
             try {
-                const response = await fetch(`/api/get_single_question?level=${currentUser.level}`);
+                // ## INILAH PERBAIKANNYA ##
+                // Menambahkan parameter unik (&t=...) untuk mencegah caching
+                const response = await fetch(`/api/get_single_question?level=${currentUser.level}&t=${new Date().getTime()}`);
+                
                 if (!response.ok) throw new Error('Gagal memuat soal.');
                 const soal = await response.json();
                 
@@ -139,10 +141,10 @@
                     optionsContainerEl.appendChild(button);
                 });
                 startTimer();
-                isInteractionLocked = false; // Buka kunci setelah soal siap
+                isInteractionLocked = false;
             } catch (error) {
                 questionEl.innerText = 'Gagal memuat kuis. Coba lagi.';
-                isInteractionLocked = false; // Buka kunci jika ada error
+                isInteractionLocked = false;
             }
         }
 
@@ -167,14 +169,11 @@
             }
 
             submitProgress(correct ? 1 : 0);
-            
-            // Jeda 2 detik sebelum memuat soal baru
             setTimeout(muatSoal, 2000);
         }
         
         async function submitProgress(xpGained) {
             if (!tgUser) {
-                // Jika tidak ada user, buka kunci untuk melanjutkan
                 isInteractionLocked = false;
                 return;
             }
@@ -248,5 +247,4 @@
         });
     </script>
 </body>
-                        </html>
-    
+</html>
