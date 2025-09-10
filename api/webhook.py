@@ -111,11 +111,14 @@ def get_question_batch():
         return jsonify(unique_questions)
         
     except Exception as e:
-        logging.error(f"Error di get_question_batch: {e}")
-        return jsonify({"error": "Gagal membuat set soal"}), 500
+        # Perubahan di sini untuk membuat pesan error lebih detail
+        error_message = f"Error di backend: {str(e)}"
+        logging.error(error_message)
+        return jsonify({"error": error_message}), 500
     finally:
         if not db.is_closed(): db.close()
 
+# ... (Endpoint /api/submit_score, /api/get_user_progress, /api/leaderboard, dan /api/webhook tetap sama persis seperti kode sebelumnya)
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
     data = request.json
@@ -190,4 +193,3 @@ def get_leaderboard():
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     return 'ok', 200
-    
