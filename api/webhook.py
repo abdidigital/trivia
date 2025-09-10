@@ -43,33 +43,24 @@ class AnsweredQuestion(BaseModel):
     player = ForeignKeyField(Player, backref='questions')
     question_hash = CharField(index=True)
 
-# --- Pengelola Koneksi Database Otomatis ---
-@app.before_request
-def before_request():
-    if not os.path.exists(db_path):
-        db.connect()
-        db.create_tables([Player, AnsweredQuestion], safe=True)
-    else:
-        db.connect(reuse_if_open=True)
-
-@app.after_request
-def after_request(response):
-    if not db.is_closed():
-        db.close()
-    return response
+# Hapus decorator @app.before_request dan @app.after_request
 
 # --- Endpoint API ---
 @app.route("/api/get_question_batch", methods=["GET"])
 def get_question_batch():
-    user_id = request.args.get('user_id')
-    if not user_id: return jsonify({"error": "user_id is required"}), 400
-
     try:
-        # Membaca soal dari file JSON lokal
+        # Buka koneksi di awal fungsi
+        db.connect(reuse_if_open=True)
+        # Buat tabel jika belum ada (aman untuk dijalankan berulang kali)
+        db.create_tables([Player, AnsweredQuestion], safe=True)
+
+        user_id = request.args.get('user_id')
+        if not user_id: return jsonify({"error": "user_id is required"}), 400
+
         with open("api/soal.json", "r", encoding="utf-8") as f:
             all_questions = json.load(f)
         
-        random.shuffle(all_questions) # Acak soal dari file
+        random.shuffle(all_questions)
         
         player = Player.get_or_none(Player.user_id == user_id)
         
@@ -78,26 +69,26 @@ def get_question_batch():
             query = AnsweredQuestion.select(AnsweredQuestion.question_hash).where(AnsweredQuestion.player == player)
             answered_hashes = {q.question_hash for q in query}
         
-        unique_questions = []
-        for q in all_questions:
-            q_hash = hashlib.sha256(q.get("pertanyaan", "").encode()).hexdigest()
-            if q_hash not in answered_hashes:
-                unique_questions.append(q)
+        unique_questions = [q for q in all_questions if hashlib.sha256(q.get("pertanyaan", "").encode()).hexdigest() not in answered_hashes]
         
-        # Kirim maksimal 10 soal unik per sesi
         return jsonify(unique_questions[:10])
         
     except Exception as e:
         error_message = f"Error di backend: {str(e)}"
         logging.error(error_message)
         return jsonify({"error": error_message}), 500
+    finally:
+        # Pastikan koneksi selalu ditutup
+        if not db.is_closed():
+            db.close()
 
-# Endpoint lainnya (submit_score, get_user_progress, leaderboard, webhook)
-# Kode di bawah ini tidak perlu diubah sama sekali, sudah kompatibel.
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
-    data = request.json
     try:
+        db.connect(reuse_if_open=True)
+        db.create_tables([Player, AnsweredQuestion], safe=True)
+
+        data = request.json
         user_data = data["user"]
         correct_answer_increment = data["score"]
         question_text = data.get("question")
@@ -122,20 +113,25 @@ def submit_score():
         
         return jsonify({
             "status": "success", 
-            "level": player.level, 
-            "xp": player.xp, 
-            "xp_needed": 10 + (player.level * 5),
-            "level_up": level_up_occurred 
+            "level": player.level, "xp": player.xp, 
+            "xp_needed": 10 + (player.level * 5), "level_up": level_up_occurred 
         })
     except Exception as e:
         logging.error(f"Database error on submit score: {e}")
         return jsonify({"error": "Could not save score"}), 500
+    finally:
+        if not db.is_closed():
+            db.close()
 
 @app.route("/api/get_user_progress", methods=["GET"])
 def get_user_progress():
-    user_id = request.args.get('user_id')
-    if not user_id: return jsonify({"error": "user_id is required"}), 400
     try:
+        db.connect(reuse_if_open=True)
+        db.create_tables([Player, AnsweredQuestion], safe=True)
+        
+        user_id = request.args.get('user_id')
+        if not user_id: return jsonify({"error": "user_id is required"}), 400
+        
         player = Player.get_or_none(Player.user_id == user_id)
         if player:
             xp_needed = 10 + (player.level * 5)
@@ -145,18 +141,27 @@ def get_user_progress():
     except Exception as e:
         logging.error(f"Database error on get user progress: {e}")
         return jsonify({"error": "Could not fetch user progress"}), 500
+    finally:
+        if not db.is_closed():
+            db.close()
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
     try:
+        db.connect(reuse_if_open=True)
+        db.create_tables([Player, AnsweredQuestion], safe=True)
+        
         top_players = Player.select().order_by(Player.level.desc(), Player.xp.desc()).limit(10)
         leaderboard_data = [{"rank": i + 1, "first_name": p.first_name, "level": p.level} for i, p in enumerate(top_players)]
         return jsonify(leaderboard_data)
     except Exception as e:
         logging.error(f"Database error on get leaderboard: {e}")
         return jsonify({"error": "Could not fetch leaderboard"}), 500
+    finally:
+        if not db.is_closed():
+            db.close()
 
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     return 'ok', 200
-                  
+        
