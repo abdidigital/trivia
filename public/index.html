@@ -6,7 +6,9 @@
     <title>Kuis Level Up</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-   <meta name="monetag" content="456e681fa51bd728d62ad7e576374311">
+    <meta name="monetag" content="456e681fa51bd728d62ad7e576374311">
+    <script>(function(s){s.dataset.zone='9853424',s.src='https://groleegni.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+    <script>(function(s){s.dataset.zone='9853421',s.src='https://gizokraijaw.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
     <style>
         :root {
             --tg-bg: #ffffff; --tg-text: #000000; --tg-button: #3390ec;
@@ -14,7 +16,7 @@
         }
         body { background-color: var(--tg-bg); color: var(--tg-text); }
         .btn-primary { background-color: var(--tg-button); color: var(--tg-button-text); }
-        .btn-primary:disabled { background-color: #9e9e9e; } /* Warna tombol nonaktif */
+        .btn-primary:disabled { background-color: #9e9e9e; }
         .progress-bar-fill { background-color: var(--tg-button); }
         .timer-svg { transform: scaleX(-1) rotate(-90deg); }
         .timer-svg-circle { transition: stroke-dashoffset 1s linear; }
@@ -22,9 +24,10 @@
     </style>
 </head>
 <body class="font-sans antialiased">
-    <div id="app" class="max-w-md mx-auto p-4">
+    <div id="app" class="max-w-md mx-auto p-4 pb-24">
 
         <div id="welcome-container" class="text-center space-y-4">
+            <div id="lives-display-welcome" class="flex justify-center items-center text-2xl space-x-1"></div>
             <h1 id="welcome-message" class="text-3xl font-bold">Memuat...</h1>
             <div id="user-stats" class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg hidden">
                 <h2 id="level-display" class="text-2xl font-semibold">Level 0</h2>
@@ -40,7 +43,8 @@
             </div>
         </div>
 
-        <div id="quiz-container" class="hidden text-center space-y-4">
+        <div id="quiz-container" class="hidden text-center space-y-4 relative">
+            <div id="lives-display-quiz" class="flex justify-center items-center space-x-1 absolute top-0 right-0 text-xl"></div>
             <div class="relative w-24 h-24 mx-auto">
                 <svg class="timer-svg" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#e0e0e0" stroke-width="10"></circle>
@@ -57,59 +61,90 @@
             </div>
         </div>
 
+        <div id="game-over-container" class="hidden text-center space-y-4 pt-10">
+            <div class="text-6xl">😭</div>
+            <h2 class="text-3xl font-bold text-red-500">Nyawa Habis!</h2>
+            <p style="color: var(--tg-hint);">Tonton iklan untuk mendapatkan +1 nyawa!</p>
+            <button id="watch-ad-btn" class="btn-primary w-full py-3 rounded-lg font-semibold">Tonton Iklan (+1 Nyawa)</button>
+            <button id="back-to-menu-gameover-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold">Kembali ke Menu</button>
+        </div>
+
         <div id="leaderboard-container" class="hidden space-y-4">
             <h2 class="text-2xl font-bold text-center">🏆 Leaderboard 🏆</h2>
             <div id="leaderboard-body" class="space-y-2"></div>
             <button id="back-to-menu-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold">Kembali</button>
         </div>
         
-        <div id="level-up-toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-500 text-white py-3 px-6 rounded-full shadow-lg opacity-0 translate-y-10">
+        <div id="level-up-toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-500 text-white py-3 px-6 rounded-full shadow-lg opacity-0 translate-y-10">
             <span id="level-up-text" class="font-bold text-lg"></span>
         </div>
     </div>
 
+    <div id="monetag-banner-container" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full flex justify-center items-center h-16 bg-slate-100 dark:bg-slate-800">
+        <span style="color: var(--tg-hint);">Area Iklan Banner</span>
+    </div>
+    
     <script>
-        const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), questionEl = document.getElementById('question'), optionsContainerEl = document.getElementById('options-container'), feedbackEl = document.getElementById('feedback'), levelDisplay = document.getElementById('level-display'), progressText = document.getElementById('progress-text'), progressBar = document.getElementById('progress-bar'), timerCircle = document.getElementById('timer-circle'), timerText = document.getElementById('timer-text'), welcomeMessageEl = document.getElementById('welcome-message'), startQuizBtn = document.getElementById('start-quiz-btn'), showLeaderboardBtn = document.getElementById('show-leaderboard-btn'), userStatsEl = document.getElementById('user-stats'), welcomeInfoEl = document.getElementById('welcome-info');
+        const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), gameOverContainer = document.getElementById('game-over-container'), questionEl = document.getElementById('question'), optionsContainerEl = document.getElementById('options-container'), feedbackEl = document.getElementById('feedback'), levelDisplay = document.getElementById('level-display'), progressText = document.getElementById('progress-text'), progressBar = document.getElementById('progress-bar'), timerCircle = document.getElementById('timer-circle'), timerText = document.getElementById('timer-text'), welcomeMessageEl = document.getElementById('welcome-message'), startQuizBtn = document.getElementById('start-quiz-btn'), showLeaderboardBtn = document.getElementById('show-leaderboard-btn'), userStatsEl = document.getElementById('user-stats'), welcomeInfoEl = document.getElementById('welcome-info'), livesWelcomeEl = document.getElementById('lives-display-welcome'), livesQuizEl = document.getElementById('lives-display-quiz'), watchAdBtn = document.getElementById('watch-ad-btn');
         
-        let tgUser = null, timerInterval, isInteractionLocked = false, bankSoal = [], soalSekarangIndex = 0, skor = 0, currentQuestionText = "";
-        let currentUser = { level: 0, xp: 0, xp_needed: 10 };
+        let tgUser = null, timerInterval, isInteractionLocked = false, bankSoal = [], soalSekarangIndex = 0, skor = 0, currentQuestionText = "", questionAnsweredCount = 0;
+        let currentUser = { level: 0, xp: 0, xp_needed: 10, lives: 3 };
 
-        function showPage(page) {
-            [welcomeContainer, quizContainer, leaderboardContainer].forEach(p => p.classList.add('hidden'));
-            page.classList.remove('hidden');
-        }
-
-        document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
-        document.getElementById('show-leaderboard-btn').addEventListener('click', showLeaderboard);
+        function showPage(page) { [welcomeContainer, quizContainer, leaderboardContainer, gameOverContainer].forEach(p => p.classList.add('hidden')); page.classList.remove('hidden'); }
+        
+        startQuizBtn.addEventListener('click', () => { triggerInterstitialAd(); startQuiz(); });
+        showLeaderboardBtn.addEventListener('click', () => { triggerInterstitialAd(); showLeaderboard(); });
+        watchAdBtn.addEventListener('click', triggerRewardAd);
         document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
+        document.getElementById('back-to-menu-gameover-btn').addEventListener('click', () => showPage(welcomeContainer));
         document.getElementById('home-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showPage(welcomeContainer); });
         document.getElementById('leaderboard-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showLeaderboard(); });
 
+        function triggerInterstitialAd() {
+            console.log("Interstitial Ad Triggered");
+            // 3. GANTI DENGAN KODE ON-CLICK (POPUP) DARI MONETAG
+        }
+
+        function triggerRewardAd() {
+            console.log("Reward Ad Triggered");
+            // 4. GANTI DENGAN KODE REWARD (VIGNETTE) DARI MONETAG
+            watchAdBtn.disabled = true;
+            watchAdBtn.innerText = 'Memuat iklan...';
+            setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/add_life', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: tgUser }) });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        currentUser.lives = data.lives;
+                        updateLivesUI();
+                        showPage(welcomeContainer);
+                    } else { throw new Error(data.error); }
+                } catch (error) { alert('Gagal mendapatkan nyawa. Coba lagi.'); }
+                finally { watchAdBtn.disabled = false; watchAdBtn.innerText = 'Tonton Iklan (+1 Nyawa)'; }
+            }, 2000);
+        }
+
+        function updateLivesUI() {
+            const hearts = '❤️'.repeat(currentUser.lives) + '🖤'.repeat(Math.max(0, 3 - currentUser.lives));
+            livesWelcomeEl.innerHTML = hearts;
+            livesQuizEl.innerHTML = hearts;
+        }
+
+        function gameOver() { clearInterval(timerInterval); showPage(gameOverContainer); }
+
         async function startQuiz() {
-            if (!tgUser) {
-                alert("Data user tidak ditemukan. Harap buka dari menu bot Telegram.");
-                return;
-            }
+            if (currentUser.lives <= 0) { gameOver(); return; }
             showPage(quizContainer);
             questionEl.innerText = 'Mempersiapkan set soal...';
             try {
                 const response = await fetch(`/api/get_question_batch?level=${currentUser.level}&user_id=${tgUser.id}&t=${new Date().getTime()}`);
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
-                
                 bankSoal = data;
-                if (bankSoal.length === 0) {
-                    questionEl.innerText = 'Hebat! Kamu sudah menjawab semua soal yang ada.';
-                    optionsContainerEl.innerHTML = `<button class="btn-primary w-full py-3 mt-4 rounded-lg font-semibold" onclick="showPage(welcomeContainer)">Kembali</button>`;
-                    return;
-                }
-                soalSekarangIndex = 0;
-                skor = 0;
+                if (bankSoal.length === 0) { questionEl.innerText = 'Hebat! Kamu sudah menjawab semua soal yang ada.'; optionsContainerEl.innerHTML = `<button class="btn-primary w-full py-3 mt-4 rounded-lg font-semibold" onclick="showPage(welcomeContainer)">Kembali</button>`; return; }
+                soalSekarangIndex = 0; skor = 0;
                 muatSoal();
-            } catch (error) {
-                questionEl.innerText = `Oops! Terjadi Masalah`;
-                optionsContainerEl.innerHTML = `<p class="text-red-500 font-mono text-xs">${error.message}</p>`;
-            }
+            } catch (error) { questionEl.innerText = `Oops! Terjadi Masalah: ${error.message}`; }
         }
         
         function muatSoal() {
@@ -138,23 +173,27 @@
             clearInterval(timerInterval);
             Array.from(optionsContainerEl.children).forEach(btn => btn.disabled = true);
             let correct = false;
-            if (jawabanDipilih === null) {
-                feedbackEl.innerText = `Waktu habis!`;
-                feedbackEl.style.color = '#ef4444';
-            } else if (jawabanDipilih === soal.jawabanBenar) {
+            if (jawabanDipilih !== null && jawabanDipilih === soal.jawabanBenar) {
                 feedbackEl.innerText = "Benar! +1 XP 🎉";
                 feedbackEl.style.color = '#22c55e';
                 correct = true;
                 skor++;
             } else {
-                feedbackEl.innerText = `Salah! Coba lagi di soal berikutnya.`;
+                feedbackEl.innerText = jawabanDipilih === null ? `Waktu habis!` : `Salah!`;
                 feedbackEl.style.color = '#ef4444';
+                currentUser.lives--;
+                updateLivesUI();
             }
             submitProgress(correct ? 1 : 0, currentQuestionText);
+            questionAnsweredCount++;
+            if (questionAnsweredCount > 0 && questionAnsweredCount % 5 === 0) {
+                setTimeout(triggerInterstitialAd, 1500);
+            }
             soalSekarangIndex++;
             setTimeout(() => {
                 isInteractionLocked = false;
-                muatSoal();
+                if (currentUser.lives <= 0) { gameOver(); }
+                else { muatSoal(); }
             }, 2000);
         }
 
@@ -167,8 +206,12 @@
                     body: JSON.stringify({ user: tgUser, score: xpGained, question: questionText })
                 });
                 const data = await response.json();
-                currentUser = { level: data.level, xp: data.xp, xp_needed: data.xp_needed };
+                currentUser.level = data.level;
+                currentUser.xp = data.xp;
+                currentUser.xp_needed = data.xp_needed;
+                currentUser.lives = data.lives; // Terima nyawa terbaru dari backend
                 updateProgressUI();
+                updateLivesUI();
                 if (data.level_up) { showLevelUpNotification(data.level); }
             } catch (error) { console.error("Gagal mengirim progres:", error); }
         }
@@ -184,10 +227,13 @@
             if (!tgUser) return;
             try {
                 const response = await fetch(`/api/get_user_progress?user_id=${tgUser.id}`);
-                if (!response.ok) return;
                 const data = await response.json();
-                currentUser = { level: data.level, xp: data.xp, xp_needed: data.xp_needed };
+                currentUser.level = data.level;
+                currentUser.xp = data.xp;
+                currentUser.xp_needed = data.xp_needed;
+                currentUser.lives = data.lives;
                 updateProgressUI();
+                updateLivesUI();
             } catch (error) { console.error("Gagal mengambil progres user:", error); }
         }
 
@@ -227,7 +273,6 @@
             tbody.innerHTML = '<p>Memuat data...</p>';
             try {
                 const response = await fetch('/api/leaderboard');
-                if (!response.ok) throw new Error('Gagal memuat leaderboard.');
                 const data = await response.json();
                 tbody.innerHTML = '';
                 if (data.length === 0) { tbody.innerHTML = '<p class="text-center" style="color: var(--tg-hint);">Belum ada skor.</p>'; }
