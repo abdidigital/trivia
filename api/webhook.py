@@ -3,6 +3,7 @@ import logging
 import json
 import datetime
 import random
+import hashlib
 import google.generativeai as genai
 from flask import Flask, request, jsonify
 from peewee import (
@@ -10,7 +11,8 @@ from peewee import (
     Model,
     CharField,
     IntegerField,
-    DateTimeField
+    DateTimeField,
+    ForeignKeyField
 )
 
 # --- Konfigurasi & Inisialisasi ---
@@ -40,13 +42,16 @@ class Player(Model):
     level = IntegerField(default=0)
     xp = IntegerField(default=0)
     updated_at = DateTimeField(default=datetime.datetime.now)
-
     class Meta:
         database = db
 
+class AnsweredQuestion(BaseModel):
+    player = ForeignKeyField(Player, backref='questions')
+    question_hash = CharField(index=True)
+
 def init_db():
     db.connect(reuse_if_open=True)
-    db.create_tables([Player], safe=True)
+    db.create_tables([Player, AnsweredQuestion], safe=True)
     db.close()
 
 init_db()
@@ -54,19 +59,15 @@ init_db()
 # --- Endpoint API ---
 @app.route("/api/get_single_question", methods=["GET"])
 def get_single_question():
-    """Menghasilkan SATU soal unik dari Gemini dengan TOPIK ACAK."""
-    
-    TOPIK_KUIS = [
-        "Sains dan Alam", "Sejarah Dunia", "Geografi", "Teknologi dan Komputer",
-        "Seni dan Budaya", "Film dan Musik", "Olahraga", "Mitologi", "Makanan dan Minuman"
-    ]
-    
+    user_id = request.args.get('user_id')
     level = int(request.args.get('level', 0))
+    if not user_id: return jsonify({"error": "user_id is required"}), 400
+
+    TOPIK_KUIS = ["Sains dan Alam", "Sejarah Dunia", "Geografi", "Teknologi", "Seni dan Budaya", "Film dan Musik", "Olahraga"]
     if level <= 2: difficulty = "sangat mudah"
     elif level <= 5: difficulty = "mudah"
     elif level <= 10: difficulty = "sedang"
-    else: difficulty = "sangat sulit"
-    
+    else: difficulty = "sulit"
     topik_acak = random.choice(TOPIK_KUIS)
 
     prompt_kuis = f"""
@@ -75,27 +76,40 @@ def get_single_question():
     Format output HARUS berupa objek JSON tunggal yang valid, tanpa teks atau penjelasan tambahan.
     Objek JSON harus memiliki kunci: "pertanyaan", "opsi" (array 4 string), dan "jawabanBenar".
     """
-    try:
-        if not GEMINI_API_KEY: raise ValueError("GEMINI_API_KEY tidak diatur")
-        
-        logging.info(f"Meminta soal baru dari Gemini dengan topik: {topik_acak}")
-        
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt_kuis)
-        raw_response = response.text.strip().replace("```json", "").replace("```", "").strip()
-        question = json.loads(raw_response)
-        return jsonify(question)
-    except Exception as e:
-        logging.error(f"Error saat memanggil Gemini API: {e}")
-        return jsonify({"error": "Tidak bisa menghubungi AI generator"}), 500
+
+    for _ in range(3):
+        try:
+            if not GEMINI_API_KEY: raise ValueError("GEMINI_API_KEY tidak diatur")
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(prompt_kuis)
+            raw_response = response.text.strip().replace("```json", "").replace("```", "").strip()
+            question_data = json.loads(raw_response)
+            question_text = question_data.get("pertanyaan", "")
+            question_hash = hashlib.sha256(question_text.encode()).hexdigest()
+            
+            db.connect(reuse_if_open=True)
+            answered = AnsweredQuestion.select().join(Player).where(
+                (Player.user_id == user_id) & (AnsweredQuestion.question_hash == question_hash)
+            ).exists()
+            db.close()
+
+            if not answered:
+                return jsonify(question_data)
+            logging.warning(f"Soal duplikat untuk user {user_id}. Mencoba lagi...")
+        except Exception as e:
+            logging.error(f"Error saat memanggil/memproses Gemini: {e}")
+            break
+    
+    logging.error(f"Gagal mendapatkan soal unik untuk user {user_id} setelah 3x coba.")
+    return jsonify(question_data) if 'question_data' in locals() else jsonify({"error": "Gagal total membuat soal"}), 500
 
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
-    """Menerima progres 1 jawaban, menghitung XP, dan memproses kenaikan level."""
     data = request.json
     try:
         user_data = data["user"]
         correct_answer_increment = data["score"]
+        question_text = data.get("question")
         
         db.connect(reuse_if_open=True)
         player, created = Player.get_or_create(
@@ -103,15 +117,17 @@ def submit_score():
             defaults={"first_name": user_data.get("first_name", "Unknown")}
         )
         
+        if question_text:
+            question_hash = hashlib.sha256(question_text.encode()).hexdigest()
+            AnsweredQuestion.get_or_create(player=player, question_hash=question_hash)
+
         player.xp += correct_answer_increment
         level_up_occurred = False
-        
         xp_needed = 10 + (player.level * 5)
         if player.xp >= xp_needed:
             player.level += 1
             player.xp -= xp_needed
             level_up_occurred = True
-            
         player.save()
         
         return jsonify({
@@ -129,7 +145,6 @@ def submit_score():
 
 @app.route("/api/get_user_progress", methods=["GET"])
 def get_user_progress():
-    """Mengambil data level, xp, dan xp yang dibutuhkan."""
     user_id = request.args.get('user_id')
     if not user_id: return jsonify({"error": "user_id is required"}), 400
     try:
@@ -148,7 +163,6 @@ def get_user_progress():
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
-    """Mengambil leaderboard diurutkan berdasarkan level dan XP."""
     try:
         db.connect(reuse_if_open=True)
         top_players = Player.select().order_by(Player.level.desc(), Player.xp.desc()).limit(10)
@@ -163,3 +177,4 @@ def get_leaderboard():
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     return 'ok', 200
+
