@@ -22,6 +22,7 @@
 </head>
 <body class="font-sans antialiased">
     <div id="app" class="max-w-md mx-auto p-4">
+
         <div id="welcome-container" class="text-center space-y-4">
             <h1 id="welcome-message" class="text-3xl font-bold">Memuat...</h1>
             <div id="user-stats" class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg hidden">
@@ -37,6 +38,7 @@
                 <button id="show-leaderboard-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold text-lg" disabled>Lihat Leaderboard</button>
             </div>
         </div>
+
         <div id="quiz-container" class="hidden text-center space-y-4">
             <div class="relative w-24 h-24 mx-auto">
                 <svg class="timer-svg" viewBox="0 0 100 100">
@@ -53,21 +55,29 @@
                 <button id="leaderboard-btn-quiz" class="bg-slate-200 dark:bg-slate-700 w-full py-2 rounded-lg font-semibold">Leaderboard</button>
             </div>
         </div>
+
         <div id="leaderboard-container" class="hidden space-y-4">
             <h2 class="text-2xl font-bold text-center">🏆 Leaderboard 🏆</h2>
             <div id="leaderboard-body" class="space-y-2"></div>
             <button id="back-to-menu-btn" class="bg-slate-200 dark:bg-slate-700 w-full py-3 rounded-lg font-semibold">Kembali</button>
         </div>
+        
         <div id="level-up-toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-500 text-white py-3 px-6 rounded-full shadow-lg opacity-0 translate-y-10">
             <span id="level-up-text" class="font-bold text-lg"></span>
         </div>
     </div>
+
     <script>
         const welcomeContainer = document.getElementById('welcome-container'), quizContainer = document.getElementById('quiz-container'), leaderboardContainer = document.getElementById('leaderboard-container'), questionEl = document.getElementById('question'), optionsContainerEl = document.getElementById('options-container'), feedbackEl = document.getElementById('feedback'), levelDisplay = document.getElementById('level-display'), progressText = document.getElementById('progress-text'), progressBar = document.getElementById('progress-bar'), timerCircle = document.getElementById('timer-circle'), timerText = document.getElementById('timer-text'), welcomeMessageEl = document.getElementById('welcome-message'), startQuizBtn = document.getElementById('start-quiz-btn'), showLeaderboardBtn = document.getElementById('show-leaderboard-btn'), userStatsEl = document.getElementById('user-stats'), welcomeInfoEl = document.getElementById('welcome-info');
+        
         let tgUser = null, timerInterval, isInteractionLocked = false, bankSoal = [], soalSekarangIndex = 0, skor = 0, currentQuestionText = "";
         let currentUser = { level: 0, xp: 0, xp_needed: 10 };
 
-        function showPage(page) { [welcomeContainer, quizContainer, leaderboardContainer].forEach(p => p.classList.add('hidden')); page.classList.remove('hidden'); }
+        function showPage(page) {
+            [welcomeContainer, quizContainer, leaderboardContainer].forEach(p => p.classList.add('hidden'));
+            page.classList.remove('hidden');
+        }
+
         document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
         document.getElementById('show-leaderboard-btn').addEventListener('click', showLeaderboard);
         document.getElementById('back-to-menu-btn').addEventListener('click', () => showPage(welcomeContainer));
@@ -75,7 +85,10 @@
         document.getElementById('leaderboard-btn-quiz').addEventListener('click', () => { clearInterval(timerInterval); showLeaderboard(); });
 
         async function startQuiz() {
-            if (!tgUser) { alert("Data user tidak ditemukan. Harap buka dari menu bot Telegram."); return; }
+            if (!tgUser) {
+                alert("Data user tidak ditemukan. Harap buka dari menu bot Telegram.");
+                return;
+            }
             showPage(quizContainer);
             questionEl.innerText = 'Mempersiapkan set soal...';
             try {
@@ -84,10 +97,18 @@
                 if (data.error) throw new Error(data.error);
                 
                 bankSoal = data;
-                if (bankSoal.length === 0) { questionEl.innerText = 'Hebat! Kamu sudah menjawab semua soal yang ada.'; return; }
-                soalSekarangIndex = 0; skor = 0;
+                if (bankSoal.length === 0) {
+                    questionEl.innerText = 'Hebat! Kamu sudah menjawab semua soal yang ada.';
+                    optionsContainerEl.innerHTML = `<button class="btn-primary w-full py-3 mt-4 rounded-lg font-semibold" onclick="showPage(welcomeContainer)">Kembali</button>`;
+                    return;
+                }
+                soalSekarangIndex = 0;
+                skor = 0;
                 muatSoal();
-            } catch (error) { questionEl.innerText = `Oops! Terjadi Masalah: ${error.message}`; }
+            } catch (error) {
+                questionEl.innerText = `Oops! Terjadi Masalah`;
+                optionsContainerEl.innerHTML = `<p class="text-red-500 font-mono text-xs">${error.message}</p>`;
+            }
         }
         
         function muatSoal() {
@@ -116,12 +137,24 @@
             clearInterval(timerInterval);
             Array.from(optionsContainerEl.children).forEach(btn => btn.disabled = true);
             let correct = false;
-            if (jawabanDipilih === null) { feedbackEl.innerText = `Waktu habis!`; feedbackEl.style.color = '#ef4444'; }
-            else if (jawabanDipilih === soal.jawabanBenar) { feedbackEl.innerText = "Benar! +1 XP 🎉"; feedbackEl.style.color = '#22c55e'; correct = true; skor++; }
-            else { feedbackEl.innerText = `Salah! Coba lagi di soal berikutnya.`; feedbackEl.style.color = '#ef4444'; }
+            if (jawabanDipilih === null) {
+                feedbackEl.innerText = `Waktu habis!`;
+                feedbackEl.style.color = '#ef4444';
+            } else if (jawabanDipilih === soal.jawabanBenar) {
+                feedbackEl.innerText = "Benar! +1 XP 🎉";
+                feedbackEl.style.color = '#22c55e';
+                correct = true;
+                skor++;
+            } else {
+                feedbackEl.innerText = `Salah! Coba lagi di soal berikutnya.`;
+                feedbackEl.style.color = '#ef4444';
+            }
             submitProgress(correct ? 1 : 0, currentQuestionText);
             soalSekarangIndex++;
-            setTimeout(() => { isInteractionLocked = false; muatSoal(); }, 2000);
+            setTimeout(() => {
+                isInteractionLocked = false;
+                muatSoal();
+            }, 2000);
         }
 
         async function submitProgress(xpGained, questionText) {
@@ -138,7 +171,7 @@
                 if (data.level_up) { showLevelUpNotification(data.level); }
             } catch (error) { console.error("Gagal mengirim progres:", error); }
         }
-
+        
         function updateProgressUI() {
             levelDisplay.innerText = `Level ${currentUser.level}`;
             progressText.innerText = `Progres: ${currentUser.xp}/${currentUser.xp_needed}`;
@@ -146,14 +179,71 @@
             progressBar.style.width = `${percentage}%`;
         }
         
-        // ... (Fungsi startTimer, showLevelUpNotification, showLeaderboard SAMA)
+        async function fetchUserProgress() {
+            if (!tgUser) return;
+            try {
+                const response = await fetch(`/api/get_user_progress?user_id=${tgUser.id}`);
+                if (!response.ok) return;
+                const data = await response.json();
+                currentUser = { level: data.level, xp: data.xp, xp_needed: data.xp_needed };
+                updateProgressUI();
+            } catch (error) { console.error("Gagal mengambil progres user:", error); }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerCircle.style.transition = 'none';
+            timerCircle.style.stroke = '#22c55e';
+            timerCircle.style.strokeDasharray = 100;
+            timerCircle.style.strokeDashoffset = 0;
+            let timeLeft = 30;
+            timerText.innerText = timeLeft;
+            setTimeout(() => {
+                timerCircle.style.transition = 'stroke-dashoffset 30s linear';
+                timerCircle.style.strokeDashoffset = 100;
+            }, 100);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.innerText = timeLeft;
+                if (timeLeft < 10) timerCircle.style.stroke = '#ef4444';
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    pilihJawaban(bankSoal[soalSekarangIndex], null);
+                }
+            }, 1000);
+        }
+
+        function showLevelUpNotification(newLevel) {
+            const toast = document.getElementById('level-up-toast');
+            document.getElementById('level-up-text').innerText = `🎉 Naik ke Level ${newLevel}! 🎉`;
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-10'); }, 3000);
+        }
+        
+        async function showLeaderboard() {
+            showPage(leaderboardContainer);
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '<p>Memuat data...</p>';
+            try {
+                const response = await fetch('/api/leaderboard');
+                if (!response.ok) throw new Error('Gagal memuat leaderboard.');
+                const data = await response.json();
+                tbody.innerHTML = '';
+                if (data.length === 0) { tbody.innerHTML = '<p class="text-center" style="color: var(--tg-hint);">Belum ada skor.</p>'; }
+                else { data.forEach(p => { tbody.innerHTML += `<div class="flex items-center justify-between bg-slate-100 dark:bg-slate-800 p-3 rounded-lg"><span class="font-bold text-lg">${p.rank}.</span><span class="flex-1 text-left ml-4">${p.first_name}</span><span class="font-semibold">Lv. ${p.level}</span></div>`; }); }
+            } catch (error) { tbody.innerHTML = '<p class="text-center text-red-500">Gagal memuat data.</p>'; }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             const tg = window.Telegram.WebApp;
             tg.ready();
-            // ... (Kode tema sama)
+            document.documentElement.style.setProperty('--tg-bg', tg.themeParams.bg_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-text', tg.themeParams.text_color || '#000000');
+            document.documentElement.style.setProperty('--tg-button', tg.themeParams.button_color || '#3390ec');
+            document.documentElement.style.setProperty('--tg-button-text', tg.themeParams.button_text_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-hint', tg.themeParams.hint_color || '#999999');
             
-            if (tg.initDataUnsafe?.user) {
+            if (tg.initDataUnsafe?.user && tg.initDataUnsafe.user.id) {
                 tgUser = tg.initDataUnsafe.user;
                 welcomeMessageEl.innerText = `Hai, ${tgUser.first_name}!`;
                 startQuizBtn.disabled = false;
