@@ -31,6 +31,7 @@ class Player(Model):
     username = CharField(null=True)
     level = IntegerField(default=0)
     xp = IntegerField(default=0)
+    lives = IntegerField(default=3) # Kolom baru untuk nyawa
     updated_at = DateTimeField(default=datetime.datetime.now)
     class Meta:
         database = db
@@ -55,19 +56,18 @@ def after_request(response):
 
 @app.route("/api/get_question_batch", methods=["GET"])
 def get_question_batch():
+    # ... (Fungsi ini tidak berubah dari versi soal.json terakhir)
     user_id = request.args.get('user_id')
     if not user_id: return jsonify({"error": "user_id is required"}), 400
     try:
         with open("api/soal.json", "r", encoding="utf-8") as f:
             all_questions = json.load(f)
         random.shuffle(all_questions)
-        
         player = Player.get_or_none(Player.user_id == user_id)
         answered_hashes = set()
         if player:
             query = AnsweredQuestion.select(AnsweredQuestion.question_hash).where(AnsweredQuestion.player == player)
             answered_hashes = {q.question_hash for q in query}
-        
         unique_questions = [q for q in all_questions if hashlib.sha256(q.get("pertanyaan", "").encode()).hexdigest() not in answered_hashes]
         return jsonify(unique_questions[:10])
     except Exception as e:
@@ -87,6 +87,10 @@ def submit_score():
             question_hash = hashlib.sha256(question_text.encode()).hexdigest()
             AnsweredQuestion.get_or_create(player=player, question_hash=question_hash)
 
+        # Kurangi nyawa jika jawaban salah
+        if correct_answer_increment == 0 and player.lives > 0:
+            player.lives -= 1
+
         player.xp += correct_answer_increment
         level_up_occurred = False
         xp_needed = 10 + (player.level * 5)
@@ -96,7 +100,7 @@ def submit_score():
             level_up_occurred = True
         player.save()
         
-        return jsonify({"status": "success", "level": player.level, "xp": player.xp, "xp_needed": 10 + (player.level * 5), "level_up": level_up_occurred})
+        return jsonify({"status": "success", "level": player.level, "xp": player.xp, "xp_needed": 10 + (player.level * 5), "level_up": level_up_occurred, "lives": player.lives})
     except Exception as e:
         return jsonify({"error": "Could not save score"}), 500
 
@@ -105,16 +109,32 @@ def get_user_progress():
     user_id = request.args.get('user_id')
     if not user_id: return jsonify({"error": "user_id is required"}), 400
     try:
-        player = Player.get_or_none(Player.user_id == user_id)
-        if player:
-            return jsonify({"level": player.level, "xp": player.xp, "xp_needed": 10 + (player.level * 5)})
-        else:
-            return jsonify({"level": 0, "xp": 0, "xp_needed": 10})
+        player, created = Player.get_or_create(user_id=user_id, defaults={"first_name": "Player"})
+        xp_needed = 10 + (player.level * 5)
+        return jsonify({"level": player.level, "xp": player.xp, "xp_needed": xp_needed, "lives": player.lives})
     except Exception as e:
         return jsonify({"error": "Could not fetch user progress"}), 500
 
+@app.route("/api/add_life", methods=["POST"])
+def add_life():
+    """Endpoint untuk menambah 1 nyawa setelah menonton iklan."""
+    data = request.json
+    user_id = data.get("user", {}).get("id")
+    if not user_id: return jsonify({"error": "user_id is required"}), 400
+    try:
+        player = Player.get_or_none(Player.user_id == user_id)
+        if player:
+            player.lives += 1
+            player.save()
+            return jsonify({"status": "success", "lives": player.lives})
+        else:
+            return jsonify({"error": "Player not found"}), 404
+    except Exception as e:
+        return jsonify({"error": "Could not add life"}), 500
+        
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
+    # ... (Fungsi ini tidak berubah)
     try:
         top_players = Player.select().order_by(Player.level.desc(), Player.xp.desc()).limit(10)
         leaderboard_data = [{"rank": i + 1, "first_name": p.first_name, "level": p.level} for i, p in enumerate(top_players)]
