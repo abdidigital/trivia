@@ -75,6 +75,8 @@
         let tgUser = null, timerInterval;
         let currentUser = { level: 0, xp: 0, xp_needed: 10 };
         let isInteractionLocked = false;
+        let bankSoal = [];
+        let soalSekarangIndex = 0;
         let currentQuestionText = "";
 
         function showPage(page) {
@@ -109,42 +111,60 @@
                 if (timeLeft < 10) timerCircle.style.stroke = '#ef4444';
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    pilihJawaban({ jawabanBenar: null }, null);
+                    pilihJawaban(bankSoal[soalSekarangIndex], null);
                 }
             }, 1000);
         }
 
         async function startQuiz() {
             showPage(quizContainer);
-            muatSoal();
-        }
-
-        async function muatSoal() {
-            isInteractionLocked = true;
-            questionEl.innerText = 'Membuat soal baru...';
+            questionEl.innerText = 'Mempersiapkan set soal unik untukmu...';
             optionsContainerEl.innerHTML = '';
             feedbackEl.innerText = '';
+            
             try {
-                const response = await fetch(`/api/get_single_question?level=${currentUser.level}&user_id=${tgUser.id}&t=${new Date().getTime()}`);
+                const response = await fetch(`/api/get_question_batch?level=${currentUser.level}&user_id=${tgUser.id}&t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error('Gagal memuat soal.');
-                const soal = await response.json();
                 
-                currentQuestionText = soal.pertanyaan;
-                questionEl.innerText = soal.pertanyaan;
-
-                soal.opsi.forEach(opsi => {
-                    const button = document.createElement('button');
-                    button.innerText = opsi;
-                    button.className = 'w-full py-3 rounded-lg border-2 border-slate-300 dark:border-slate-600';
-                    button.onclick = () => pilihJawaban(soal, opsi);
-                    optionsContainerEl.appendChild(button);
-                });
-                startTimer();
-                isInteractionLocked = false;
+                bankSoal = await response.json();
+                
+                if (bankSoal.length === 0) {
+                    questionEl.innerText = 'Luar biasa! Kamu sudah menjawab semua soal yang ada.';
+                    optionsContainerEl.innerHTML = '<p>Coba lagi nanti untuk set soal yang baru!</p>';
+                    return;
+                }
+                
+                soalSekarangIndex = 0; 
+                skor = 0;
+                muatSoal();
             } catch (error) {
-                questionEl.innerText = 'Gagal memuat kuis. Coba lagi.';
-                isInteractionLocked = false;
+                questionEl.innerText = 'Gagal memuat kuis. Coba lagi nanti.';
             }
+        }
+
+        function muatSoal() {
+            feedbackEl.innerText = '';
+            
+            if (soalSekarangIndex >= bankSoal.length) {
+                clearInterval(timerInterval);
+                questionEl.innerText = `Kuis Selesai!`;
+                optionsContainerEl.innerHTML = `<p class="text-lg">Kamu menjawab <strong>${skor}</strong> dari ${bankSoal.length} soal dengan benar!</p><button class="btn-primary w-full py-3 mt-4 rounded-lg font-semibold" onclick="showPage(welcomeContainer)">Selesai</button>`;
+                return;
+            }
+
+            const soal = bankSoal[soalSekarangIndex];
+            currentQuestionText = soal.pertanyaan;
+            
+            questionEl.innerText = soal.pertanyaan;
+            optionsContainerEl.innerHTML = '';
+            soal.opsi.forEach(opsi => {
+                const button = document.createElement('button');
+                button.innerText = opsi;
+                button.className = 'w-full py-3 rounded-lg border-2 border-slate-300 dark:border-slate-600';
+                button.onclick = () => pilihJawaban(soal, opsi);
+                optionsContainerEl.appendChild(button);
+            });
+            startTimer();
         }
 
         function pilihJawaban(soal, jawabanDipilih) {
@@ -162,13 +182,20 @@
                 feedbackEl.innerText = "Benar! +1 XP 🎉";
                 feedbackEl.style.color = '#22c55e';
                 correct = true;
+                skor++; // Tambah skor sesi ini
             } else {
                 feedbackEl.innerText = `Salah! Coba lagi di soal berikutnya.`;
                 feedbackEl.style.color = '#ef4444';
             }
 
             submitProgress(correct ? 1 : 0, currentQuestionText);
-            setTimeout(muatSoal, 2000);
+            
+            soalSekarangIndex++;
+            
+            setTimeout(() => {
+                isInteractionLocked = false;
+                muatSoal();
+            }, 2000);
         }
         
         async function submitProgress(xpGained, questionText) {
