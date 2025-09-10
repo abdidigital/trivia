@@ -1,16 +1,7 @@
 {
-  "builds": [
-    {
-      "src": "api/webhook.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    }
-  ],
+  "builds": [ /* ... */ ],
   "routes": [
-    { "src": "/api/questions", "dest": "api/webhook.py" },
+    { "src": "/api/get_single_question", "dest": "api/webhook.py" },
     { "src": "/api/submit_score", "dest": "api/webhook.py" },
     { "src": "/api/leaderboard", "dest": "api/webhook.py" },
     { "src": "/api/get_user_progress", "dest": "api/webhook.py" },
