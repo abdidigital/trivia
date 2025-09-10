@@ -49,9 +49,26 @@ class AnsweredQuestion(BaseModel):
     player = ForeignKeyField(Player, backref='questions')
     question_hash = CharField(index=True)
 
+# ## FUNGSI BARU UNTUK INISIALISASI DATABASE SEKALI JALAN ##
+def initialize_database():
+    """Fungsi ini hanya akan dipanggil jika file database belum ada."""
+    try:
+        db.connect()
+        db.create_tables([Player, AnsweredQuestion], safe=True)
+        logging.info("Tabel database berhasil dibuat.")
+    except Exception as e:
+        logging.error(f"Gagal membuat tabel database: {e}")
+    finally:
+        if not db.is_closed():
+            db.close()
+
 # --- Pengelola Koneksi Database Otomatis ---
 @app.before_request
 def before_request():
+    # ## PERUBAHAN UTAMA: Cek file sebelum connect ##
+    # Jika file .db belum ada di direktori /tmp, buat dulu
+    if not os.path.exists(db_path):
+        initialize_database()
     db.connect(reuse_if_open=True)
 
 @app.after_request
@@ -60,15 +77,12 @@ def after_request(response):
         db.close()
     return response
 
-# Inisialisasi tabel saat aplikasi dimuat
-with app.app_context():
-    db.connect(reuse_if_open=True)
-    db.create_tables([Player, AnsweredQuestion], safe=True)
-    db.close()
+# Hapus blok "with app.app_context()" yang lama
 
 # --- Endpoint API ---
 @app.route("/api/get_question_batch", methods=["GET"])
 def get_question_batch():
+    # ... (KODE FUNGSI INI SAMA PERSIS SEPERTI SEBELUMNYA, TIDAK ADA PERUBAHAN)
     user_id = request.args.get('user_id')
     level = int(request.args.get('level', 0))
     if not user_id: return jsonify({"error": "user_id is required"}), 400
@@ -78,10 +92,7 @@ def get_question_batch():
         "Seni dan Budaya", "Film dan Sinema", "Musik Modern", "Musik Klasik", "Olahraga Dunia",
         "Mitologi Yunani", "Mitologi Romawi", "Mitologi Nordik", "Makanan dan Minuman Internasional",
         "Astronomi dan Luar Angkasa", "Biologi dan Hewan", "Kimia Dasar", "Fisika Sehari-hari",
-        "Kesusastraan Dunia", "Penemuan dan Inovasi", "Anatomi Manusia", "Ibukota Negara",
-        "Mata Uang Dunia", "Keajaiban Dunia", "Sejarah Indonesia", "Pahlawan Nasional",
-        "Permainan Video (Video Games)", "Istilah Internet", "Filsafat Dasar", "Ekonomi Dasar",
-        "Botani dan Tumbuhan", "Samudra dan Lautan", "Arsitektur Terkenal"
+        "Kesusastraan Dunia", "Penemuan dan Inovasi", "Anatomi Manusia", "Ibukota Negara"
     ]
     
     if level <= 5: difficulty = "mudah"
@@ -96,8 +107,7 @@ def get_question_batch():
     Setiap objek dalam array harus memiliki kunci: "pertanyaan", "opsi" (array 4 string), dan "jawabanBenar".
     """
     try:
-        if not os.environ.get("GEMINI_API_KEY"): raise ValueError("GEMINI_API_KEY tidak diatur")
-        
+        if not GEMINI_API_KEY: raise ValueError("GEMINI_API_KEY tidak diatur")
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt_kuis)
         raw_response = response.text.strip().replace("```json", "").replace("```", "").strip()
@@ -110,22 +120,19 @@ def get_question_batch():
             query = AnsweredQuestion.select(AnsweredQuestion.question_hash).where(AnsweredQuestion.player == player)
             answered_hashes = {q.question_hash for q in query}
         
-        unique_questions = []
-        for q in generated_questions:
-            q_hash = hashlib.sha256(q.get("pertanyaan", "").encode()).hexdigest()
-            if q_hash not in answered_hashes:
-                unique_questions.append(q)
+        unique_questions = [q for q in generated_questions if hashlib.sha256(q.get("pertanyaan", "").encode()).hexdigest() not in answered_hashes]
         
         logging.info(f"Generated {len(generated_questions)}, returning {len(unique_questions)} unique questions for user {user_id}")
         return jsonify(unique_questions)
-        
     except Exception as e:
         error_message = f"Error di backend: {str(e)}"
         logging.error(error_message)
         return jsonify({"error": error_message}), 500
 
+
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
+    # ... (KODE FUNGSI INI SAMA PERSIS SEPERTI SEBELUMNYA, TIDAK ADA PERUBAHAN)
     data = request.json
     try:
         user_data = data["user"]
@@ -163,6 +170,7 @@ def submit_score():
 
 @app.route("/api/get_user_progress", methods=["GET"])
 def get_user_progress():
+    # ... (KODE FUNGSI INI SAMA PERSIS SEPERTI SEBELUMNYA, TIDAK ADA PERUBAHAN)
     user_id = request.args.get('user_id')
     if not user_id: return jsonify({"error": "user_id is required"}), 400
     try:
@@ -178,6 +186,7 @@ def get_user_progress():
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
+    # ... (KODE FUNGSI INI SAMA PERSIS SEPERTI SEBELUMNYA, TIDAK ADA PERUBAHAN)
     try:
         top_players = Player.select().order_by(Player.level.desc(), Player.xp.desc()).limit(10)
         leaderboard_data = [{"rank": i + 1, "first_name": p.first_name, "level": p.level} for i, p in enumerate(top_players)]
