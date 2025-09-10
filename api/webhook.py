@@ -49,12 +49,22 @@ class AnsweredQuestion(BaseModel):
     player = ForeignKeyField(Player, backref='questions')
     question_hash = CharField(index=True)
 
-def init_db():
+# --- Pengelola Koneksi Database Otomatis ---
+@app.before_request
+def before_request():
+    db.connect(reuse_if_open=True)
+
+@app.after_request
+def after_request(response):
+    if not db.is_closed():
+        db.close()
+    return response
+
+# Inisialisasi tabel saat aplikasi dimuat
+with app.app_context():
     db.connect(reuse_if_open=True)
     db.create_tables([Player, AnsweredQuestion], safe=True)
     db.close()
-
-init_db()
 
 # --- Endpoint API ---
 @app.route("/api/get_question_batch", methods=["GET"])
@@ -93,7 +103,6 @@ def get_question_batch():
         raw_response = response.text.strip().replace("```json", "").replace("```", "").strip()
         generated_questions = json.loads(raw_response)
         
-        db.connect(reuse_if_open=True)
         player = Player.get_or_none(Player.user_id == user_id)
         
         answered_hashes = set()
@@ -111,14 +120,10 @@ def get_question_batch():
         return jsonify(unique_questions)
         
     except Exception as e:
-        # Perubahan di sini untuk membuat pesan error lebih detail
         error_message = f"Error di backend: {str(e)}"
         logging.error(error_message)
         return jsonify({"error": error_message}), 500
-    finally:
-        if not db.is_closed(): db.close()
 
-# ... (Endpoint /api/submit_score, /api/get_user_progress, /api/leaderboard, dan /api/webhook tetap sama persis seperti kode sebelumnya)
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
     data = request.json
@@ -127,7 +132,6 @@ def submit_score():
         correct_answer_increment = data["score"]
         question_text = data.get("question")
         
-        db.connect(reuse_if_open=True)
         player, created = Player.get_or_create(
             user_id=user_data["id"],
             defaults={"first_name": user_data.get("first_name", "Unknown")}
@@ -156,15 +160,12 @@ def submit_score():
     except Exception as e:
         logging.error(f"Database error on submit score: {e}")
         return jsonify({"error": "Could not save score"}), 500
-    finally:
-        if not db.is_closed(): db.close()
 
 @app.route("/api/get_user_progress", methods=["GET"])
 def get_user_progress():
     user_id = request.args.get('user_id')
     if not user_id: return jsonify({"error": "user_id is required"}), 400
     try:
-        db.connect(reuse_if_open=True)
         player = Player.get_or_none(Player.user_id == user_id)
         if player:
             xp_needed = 10 + (player.level * 5)
@@ -174,22 +175,18 @@ def get_user_progress():
     except Exception as e:
         logging.error(f"Database error on get user progress: {e}")
         return jsonify({"error": "Could not fetch user progress"}), 500
-    finally:
-        if not db.is_closed(): db.close()
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
     try:
-        db.connect(reuse_if_open=True)
         top_players = Player.select().order_by(Player.level.desc(), Player.xp.desc()).limit(10)
         leaderboard_data = [{"rank": i + 1, "first_name": p.first_name, "level": p.level} for i, p in enumerate(top_players)]
         return jsonify(leaderboard_data)
     except Exception as e:
         logging.error(f"Database error on get leaderboard: {e}")
         return jsonify({"error": "Could not fetch leaderboard"}), 500
-    finally:
-        if not db.is_closed(): db.close()
 
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
     return 'ok', 200
+    
