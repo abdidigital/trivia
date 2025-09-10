@@ -1,29 +1,31 @@
 import os
 import logging
 import json
-import random
+import datetime
+import google.generativeai as genai
 from flask import Flask, request, jsonify
-from telegram import Update, Bot
 from peewee import (
     SqliteDatabase,
     Model,
     CharField,
     IntegerField,
-    DateTimeField,
-    fn,
+    DateTimeField
 )
-import datetime
 
 # --- Konfigurasi & Inisialisasi ---
 app = Flask(__name__)
 BOT_TOKEN = os.environ.get("8264701988:AAH5x9q03FR9Em6RSXOPC_ZEjWiIhD9wcXo")
+
+# Konfigurasi kunci API Gemini
+GEMINI_API_KEY = os.environ.get("AIzaSyA5WC0JNFSVdtnm8Z_pyaL9vsc2nMbfQHI")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
 # --- Pengaturan Database (SQLite) ---
-# Vercel hanya punya direktori /tmp yang bisa ditulis
 db_path = "/tmp/leaderboard.db"
 db = SqliteDatabase(db_path)
 
@@ -39,61 +41,58 @@ class Score(BaseModel):
     score = IntegerField(default=0)
     updated_at = DateTimeField(default=datetime.datetime.now)
 
-# Buat tabel jika belum ada
-db.connect()
-db.create_tables([Score], safe=True)
-db.close()
+def init_db():
+    db.connect(reuse_if_open=True)
+    db.create_tables([Score], safe=True)
+    db.close()
+
+init_db()
 
 # --- Endpoint API ---
-
 @app.route("/api/questions", methods=["GET"])
 def get_questions():
-    """Mengacak soal, mengambil 5, dan mengirimkannya."""
+    """Menghasilkan 5 soal unik dari Google Gemini."""
+    prompt_kuis = """
+    Buatkan 5 pertanyaan kuis pilihan ganda tentang pengetahuan umum acak (sains, sejarah, geografi, teknologi). 
+    Level kesulitan: sedang. Bahasa: Indonesia.
+    Format output HARUS berupa array JSON yang valid, tanpa teks atau penjelasan tambahan di luar array.
+    Setiap objek dalam array harus memiliki kunci: "pertanyaan" (string), "opsi" (array berisi 4 string), dan "jawabanBenar" (string).
+    """
     try:
-        with open("api/soal.json", "r", encoding="utf-8") as f:
-            questions = json.load(f)
-        
-        # Acak urutan soal
-        random.shuffle(questions)
-        
-        # Ambil hanya 5 soal pertama
-        limited_questions = questions[:5]
-        
-        return jsonify(limited_questions)
+        if not GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY tidak diatur")
+        logging.info("Meminta soal baru dari Gemini...")
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt_kuis)
+        raw_response = response.text.strip().replace("```json", "").replace("```", "").strip()
+        logging.info("Menerima jawaban dari Gemini.")
+        questions = json.loads(raw_response)
+        return jsonify(questions)
     except Exception as e:
-        logging.error(f"Error reading/processing questions file: {e}")
-        return jsonify({"error": "Could not load questions"}), 500
+        logging.error(f"Error saat memanggil Gemini API: {e}")
+        return jsonify({"error": "Tidak bisa menghubungi AI generator"}), 500
 
 @app.route("/api/submit_score", methods=["POST"])
 def submit_score():
-    """Menerima dan menyimpan skor dari user."""
     data = request.json
-    if not all(k in data for k in ["user", "score"]):
-        return jsonify({"error": "Missing user data or score"}), 400
-
-    user_data = data["user"]
-    user_score = data["score"]
-
     try:
+        user_data = data["user"]
+        user_score = data["score"]
         db.connect(reuse_if_open=True)
-        # Cari user, jika tidak ada, buat baru. Jika ada, update.
         player, created = Score.get_or_create(
             user_id=user_data["id"],
             defaults={
-                "first_name": user_data.get("first_name", ""),
+                "first_name": user_data.get("first_name", "Unknown"),
                 "last_name": user_data.get("last_name"),
                 "username": user_data.get("username"),
                 "score": user_score,
             },
         )
-
-        # Jika user sudah ada dan skor baru lebih tinggi, update
         if not created and user_score > player.score:
             player.score = user_score
             player.updated_at = datetime.datetime.now()
             player.save()
-        
-        return jsonify({"status": "success", "message": "Score updated!"})
+        return jsonify({"status": "success"})
     except Exception as e:
         logging.error(f"Database error on submit score: {e}")
         return jsonify({"error": "Could not save score"}), 500
@@ -101,24 +100,13 @@ def submit_score():
         if not db.is_closed():
             db.close()
 
-
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
-    """Mengambil 10 skor tertinggi dari database."""
     try:
         db.connect(reuse_if_open=True)
-        top_scores = (
-            Score.select()
-            .order_by(Score.score.desc(), Score.updated_at.asc())
-            .limit(10)
-        )
-        
+        top_scores = Score.select().order_by(Score.score.desc()).limit(10)
         leaderboard_data = [
-            {
-                "rank": i + 1,
-                "first_name": score.first_name,
-                "score": score.score,
-            }
+            {"rank": i + 1, "first_name": score.first_name, "score": score.score}
             for i, score in enumerate(top_scores)
         ]
         return jsonify(leaderboard_data)
@@ -129,8 +117,8 @@ def get_leaderboard():
         if not db.is_closed():
             db.close()
 
-# Endpoint webhook tidak perlu diubah, biarkan seperti sebelumnya
 @app.route('/api/webhook', methods=['POST'])
 def webhook():
+    # Fungsi ini bisa dikembangkan lebih lanjut jika bot butuh merespon chat
     return 'ok', 200
-
+        
