@@ -14,10 +14,10 @@ from peewee import (
 
 # --- Konfigurasi & Inisialisasi ---
 app = Flask(__name__)
-BOT_TOKEN = os.environ.get("8264701988:AAH5x9q03FR9Em6RSXOPC_ZEjWiIhD9wcXo")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 # Konfigurasi kunci API Gemini
-GEMINI_API_KEY = os.environ.get("AIzaSyA5WC0JNFSVdtnm8Z_pyaL9vsc2nMbfQHI")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
